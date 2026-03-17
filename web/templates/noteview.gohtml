@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{.Title}} - Blindsidian</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+    <div id="system-messages" role="status" aria-live="polite" class="sr-only"></div>
+
+    <header>
+        <nav aria-label="Breadcrumb">
+            <a href="/notes">Back to notes</a>
+        </nav>
+    </header>
+
+    <main id="main-content">
+        <div id="note-display-area">
+            {{template "note_view_fragment" .}}
+        </div>
+    </main>
+
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            var textarea = document.getElementById('note-content-textarea');
+            if (textarea) {
+                textarea.focus();
+                document.getElementById('system-messages').innerText = "Editing mode active";
+                return;
+            }
+            var editButton = document.getElementById('edit-button');
+            if (editButton) {
+                editButton.focus();
+                document.getElementById('system-messages').innerText = "View mode active";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{{define "base"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{.Title}}</title>
+  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content" style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='static';this.style.left='0';this.style.width='auto';">Skip to main content</a>
+  <header>
+    <nav aria-label="Main navigation">
+      <a href="/">Home</a> |
+      <a href="/notes">Notes</a> |
+      <a href="/logout">Logout</a>
+    </nav>
+  </header>
+  <div id="system-status" role="status" aria-live="polite" aria-atomic="true">{{if .Message}}{{.Message}}{{end}}</div>
+  <main id="main-content">
+    {{block "content" .}}{{end}}
+  </main>
+  <footer>
+    <p>Blindsidian — accessible notes.</p>
+  </footer>
+</body>
+</html>
+{{end}}

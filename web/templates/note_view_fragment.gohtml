@@ -1,0 +1,16 @@
+{{define "note_view_fragment"}}
+<article aria-labelledby="note-title">
+    <h1 id="note-title">{{.Title}}</h1>
+    <div id="note-body">
+        {{.Body}}
+    </div>
+    <button id="edit-button" 
+            hx-get="/notes/view/edit?title={{.Title | urlquery}}" 
+            hx-target="#note-display-area" 
+            hx-swap="innerHTML" 
+            accesskey="e"
+            aria-controls="note-display-area">
+        Edit Note
+    </button>
+</article>
+{{end}}

@@ -1,0 +1,33 @@
+{{define "note_edit_fragment"}}
+<form hx-post="/notes/view/update" 
+      hx-target="#note-display-area" 
+      hx-swap="innerHTML"
+      aria-labelledby="edit-heading">
+    <h1 id="edit-heading">Editing: {{.Title}}</h1>
+    
+    <input type="hidden" name="original_title" value="{{.Title}}">
+    
+    <div>
+        <label for="edit-title">Title</label>
+        <input id="edit-title" name="title" value="{{.Title}}" required>
+    </div>
+    
+    <div>
+        <label for="note-content-textarea">Note content in Markdown</label>
+        <span id="markdown-instructions" class="sr-only">Use markdown syntax. Save to preview.</span>
+        <textarea id="note-content-textarea" 
+                  name="content" 
+                  rows="10" 
+                  required 
+                  aria-describedby="markdown-instructions">{{.Raw}}</textarea>
+    </div>
+    
+    <button type="submit">Save</button>
+    <button type="button" 
+            hx-get="/notes/view?title={{.Title | urlquery}}" 
+            hx-target="#note-display-area" 
+            hx-swap="innerHTML">
+        Cancel
+    </button>
+</form>
+{{end}}

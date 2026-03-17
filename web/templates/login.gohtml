@@ -1,0 +1,35 @@
+{{define "login.gohtml"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login - Blindsidian</title>
+  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content" style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='static';this.style.left='0';this.style.width='auto';">Skip to main content</a>
+  <header><h1>Login</h1></header>
+  <main id="main-content">
+    <section>
+      <p>Access your notes.</p>
+      <form method="post" action="/login" novalidate>
+        <div aria-atomic="true">
+          {{if .Error}}<p role="status" style="color:red;">{{.Error}}</p>{{end}}
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required>
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required>
+        </div>
+        <button type="submit">Log in</button>
+      </form>
+      <p>Need an account? <a href="/signup">Sign up</a></p>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

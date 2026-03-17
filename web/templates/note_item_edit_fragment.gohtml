@@ -1,0 +1,20 @@
+{{define "note_item_edit_fragment"}}
+<li id="note-item-{{.ID}}">
+  <article>
+    <h3>Editing: {{.Title}}</h3>
+    <form hx-post="/notes/{{.ID}}/update" hx-target="#note-item-{{.ID}}" hx-swap="outerHTML">
+      <input type="hidden" name="original_id" value="{{.ID}}">
+      <div>
+        <label for="edit-title-{{.ID}}">Title</label>
+        <input id="edit-title-{{.ID}}" name="title" value="{{.Title}}" required>
+      </div>
+      <div>
+        <label for="edit-content-{{.ID}}">Note content in Markdown</label>
+        <textarea id="edit-content-{{.ID}}" name="content" rows="5" required>{{.Content}}</textarea>
+      </div>
+      <button type="submit">Save</button>
+      <button type="button" hx-get="/notes" hx-target="body" hx-swap="outerHTML">Cancel</button>
+    </form>
+  </article>
+</li>
+{{end}}
