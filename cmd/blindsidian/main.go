@@ -315,21 +315,8 @@ func noteActionHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 				return
 			}
 
-			noteExists := func(title string) (bool, error) {
-				n, err := mgr.GetNoteByTitle(db, title)
-				if err != nil {
-					return false, err
-				}
-				return n != nil, nil
-			}
-			htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteExists)
-			if err != nil {
-				http.Error(w, "unable to render markdown", http.StatusInternalServerError)
-				return
-			}
-
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			templates.ExecuteTemplate(w, "note_action_edit_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "Content": note.Content, "RenderedHTML": template.HTML(htmlContent)})
+			templates.ExecuteTemplate(w, "note_item_edit_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "Content": note.Content, "Raw": note.Content})
 		case "update":
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -343,6 +330,28 @@ func noteActionHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 			}
 			if err := mgr.UpdateNote(db, database.Note{ID: noteID, Title: title, Content: content}); err != nil {
 				http.Error(w, "unable to update note", http.StatusInternalServerError)
+				return
+			}
+			note, err := mgr.GetNoteByID(db, noteID)
+			if err != nil || note == nil {
+				http.Error(w, "note not found after update", http.StatusInternalServerError)
+				return
+			}
+			noteExists := func(title string) (bool, error) {
+				n, err := mgr.GetNoteByTitle(db, title)
+				if err != nil {
+					return false, err
+				}
+				return n != nil, nil
+			}
+			htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteExists)
+			if err != nil {
+				http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+				return
+			}
+			if isHTMXRequest(r) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				templates.ExecuteTemplate(w, "note_item_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "UpdatedAt": note.UpdatedAt, "RenderedHTML": template.HTML(htmlContent)})
 				return
 			}
 			http.Redirect(w, r, "/notes?msg=Note+saved", http.StatusSeeOther)
@@ -565,10 +574,9 @@ func searchHandler(mgr *database.DatabaseManager, sessions *SessionStore) http.H
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if len(notes) == 0 {
-			w.Write([]byte("<p role=\"status\">No matches found.</p>"))
+			w.Write([]byte("<p>No matches found.</p>"))
 			return
 		}
-		w.Write([]byte(fmt.Sprintf("<p role=\"status\">Found %d results.</p>", len(notes))))
 		w.Write([]byte("<ul>"))
 		for _, n := range notes {
 			w.Write([]byte(fmt.Sprintf("<li><a href=\"/notes/view?title=%s\">%s</a></li>", url.QueryEscape(n.Title), html.EscapeString(n.Title))))

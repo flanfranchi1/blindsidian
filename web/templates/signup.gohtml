@@ -5,14 +5,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Sign Up - Blindsidian</title>
+  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
 </head>
 <body>
-  <header>
-    <h1>Sign Up</h1>
-    <p>Create an account to start writing notes.</p>
-  </header>
-  <main>
+  <a class="skip-link" href="#main-content" style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='static';this.style.left='0';this.style.width='auto';">Skip to main content</a>
+  <header><h1>Sign Up</h1></header>
+  <main id="main-content">
     <section>
+      <p>Create an account to start writing notes.</p>
       <form method="post" action="/signup" novalidate>
         <div aria-atomic="true">
           {{if .Error}}<p role="status" style="color:red;">{{.Error}}</p>{{end}}
@@ -27,8 +27,8 @@
         </div>
         <button type="submit">Create account</button>
       </form>
+      <p>Already registered? <a href="/login">Log in</a></p>
     </section>
-    <p>Already registered? <a href="/login">Log in</a></p>
   </main>
 </body>
 </html>

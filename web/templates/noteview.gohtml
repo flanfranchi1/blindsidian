@@ -1,36 +1,41 @@
-{{define "noteview.gohtml"}}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Title}} - Blindsidian</title>
-  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{.Title}} - Blindsidian</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main-content" style="position:absolute;left:-999px;top:auto;">Skip to main content</a>
-  <header>
-    <h1>{{.Title}}</h1>
-    <p><a href="/notes">Back to notes</a></p>
-  </header>
-  <main id="main-content">
-    {{template "note_view_fragment" .}}
-  </main>
-  <script>
-    document.body.addEventListener('htmx:afterSwap', function(event) {
-      if (event.detail.target && event.detail.target.id === 'main-content') {
-        var textarea = document.getElementById('note-content-textarea');
-        if (textarea) {
-          textarea.focus();
-          return;
-        }
-        var editButton = document.getElementById('edit-note-btn');
-        if (editButton) {
-          editButton.focus();
-        }
-      }
-    });
-  </script>
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+    <div id="system-messages" role="status" aria-live="polite" class="sr-only"></div>
+
+    <header>
+        <nav aria-label="Breadcrumb">
+            <a href="/notes">Back to notes</a>
+        </nav>
+    </header>
+
+    <main id="main-content">
+        <div id="note-display-area">
+            {{template "note_view_fragment" .}}
+        </div>
+    </main>
+
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            var textarea = document.getElementById('note-content-textarea');
+            if (textarea) {
+                textarea.focus();
+                document.getElementById('system-messages').innerText = "Editing mode active";
+                return;
+            }
+            var editButton = document.getElementById('edit-button');
+            if (editButton) {
+                editButton.focus();
+                document.getElementById('system-messages').innerText = "View mode active";
+            }
+        });
+    </script>
 </body>
 </html>
-{{end}}

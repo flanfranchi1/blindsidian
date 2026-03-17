@@ -1,0 +1,13 @@
+{{define "note_item_fragment"}}
+<li id="note-item-{{.ID}}">
+  <article>
+    <h3><a href="/notes/view?title={{urlquery .Title}}">{{.Title}}</a></h3>
+    <p><small>Last update: {{.UpdatedAt}}</small></p>
+    <div id="note-view-{{.ID}}">{{.RenderedHTML}}</div>
+    <div>
+      <button aria-label="Edit note: {{.Title}}" hx-get="/notes/{{.ID}}/edit" hx-target="#note-item-{{.ID}}" hx-swap="outerHTML">Edit</button>
+      <button type="button" aria-label="Delete note: {{.Title}}" hx-post="/notes/{{.ID}}/delete" hx-confirm="Confirm delete?" hx-target="closest li" hx-swap="outerHTML swap:1s">Delete</button>
+    </div>
+  </article>
+</li>
+{{end}}
