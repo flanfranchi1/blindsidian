@@ -642,8 +642,9 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := r.URL.Query().Get("q")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if strings.TrimSpace(q) == "" {
-		w.Write([]byte("<p>Start typing to search notes...</p>"))
+		fmt.Fprint(w, `<div id="search-announcer" class="sr-only" aria-live="polite" aria-atomic="true" hx-swap-oob="true"></div>`)
 		return
 	}
 
@@ -654,20 +655,40 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	notes, err := s.DBManager.SearchNotes(db, q)
+	results, err := s.DBManager.SearchNotes(db, q)
 	if err != nil {
 		http.Error(w, "unable to search notes", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if len(notes) == 0 {
-		w.Write([]byte("<p>No matches found.</p>"))
+	count := len(results)
+	announcement := fmt.Sprintf("%d result", count)
+	if count != 1 {
+		announcement += "s"
+	}
+	announcement += " found"
+
+	fmt.Fprintf(w, `<div id="search-announcer" class="sr-only" aria-live="polite" aria-atomic="true" hx-swap-oob="true">%s</div>`, html.EscapeString(announcement))
+
+	if count == 0 {
+		fmt.Fprint(w, "<p>No matches found.</p>")
 		return
 	}
-	w.Write([]byte("<ul>"))
-	for _, n := range notes {
-		w.Write([]byte(fmt.Sprintf("<li><a href=\"/notes/view?title=%s\">%s</a></li>", url.QueryEscape(n.Title), html.EscapeString(n.Title))))
+
+	type searchItem struct {
+		Title   string
+		URL     string
+		Snippet template.HTML
 	}
-	w.Write([]byte("</ul>"))
+	items := make([]searchItem, 0, count)
+	for _, res := range results {
+		items = append(items, searchItem{
+			Title:   res.Title,
+			URL:     "/notes/view?title=" + url.QueryEscape(res.Title),
+			Snippet: template.HTML(res.Snippet),
+		})
+	}
+
+	tmpl := template.Must(template.New("search").Parse(`<ul role="list">{{range .}}<li><a href="{{.URL}}">{{.Title}}</a>{{if .Snippet}}<br><small style="color:#666">{{.Snippet}}</small>{{end}}</li>{{end}}</ul>`))
+	tmpl.Execute(w, items)
 }

@@ -32,6 +32,12 @@ type Note struct {
 	NotebookID string
 }
 
+type SearchResult struct {
+	ID      string
+	Title   string
+	Snippet string
+}
+
 type Notebook struct {
 	ID        string
 	Name      string
@@ -165,10 +171,10 @@ func (m *DatabaseManager) GetNoteByTitle(db *sql.DB, title string) (*Note, error
 	return note, nil
 }
 
-func (m *DatabaseManager) SearchNotes(db *sql.DB, queryText string) ([]Note, error) {
+func (m *DatabaseManager) SearchNotes(db *sql.DB, queryText string) ([]SearchResult, error) {
 	clean := strings.TrimSpace(ftsSanitizeRegexp.ReplaceAllString(queryText, " "))
 	if clean == "" {
-		return []Note{}, nil
+		return []SearchResult{}, nil
 	}
 	terms := strings.Fields(clean)
 	for i := range terms {
@@ -176,21 +182,26 @@ func (m *DatabaseManager) SearchNotes(db *sql.DB, queryText string) ([]Note, err
 	}
 	ftsQuery := strings.Join(terms, " ")
 
-	rows, err := db.Query(`SELECT n.id, n.title, n.content, n.updated_at FROM notes n JOIN notes_fts f ON n.id = f.id WHERE f.notes_fts MATCH ? LIMIT 50;`, ftsQuery)
+	rows, err := db.Query(`SELECT id, title, snippet(notes_fts, 2, '<b>', '</b>', '...', 10) FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank LIMIT 50;`, ftsQuery)
 	if err != nil {
 		return nil, fmt.Errorf("unable to search notes: %w", err)
 	}
 	defer rows.Close()
 
-	notes := []Note{}
+	seen := map[string]struct{}{}
+	results := []SearchResult{}
 	for rows.Next() {
-		note := Note{}
-		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("unable to scan search note: %w", err)
+		r := SearchResult{}
+		if err := rows.Scan(&r.ID, &r.Title, &r.Snippet); err != nil {
+			return nil, fmt.Errorf("unable to scan search result: %w", err)
 		}
-		notes = append(notes, note)
+		if _, ok := seen[r.ID]; ok {
+			continue
+		}
+		seen[r.ID] = struct{}{}
+		results = append(results, r)
 	}
-	return notes, nil
+	return results, nil
 }
 
 func (m *DatabaseManager) UpdateNote(db *sql.DB, note Note) error {

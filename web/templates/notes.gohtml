@@ -73,6 +73,25 @@
             </form>
         </section>
 
+        <section aria-labelledby="search-heading">
+            <h2 id="search-heading">Search notes</h2>
+            <div role="search">
+                <label for="global-search">Search all notes</label>
+                <input id="global-search"
+                       type="search"
+                       name="q"
+                       autocomplete="off"
+                       hx-get="/search"
+                       hx-trigger="keyup changed delay:500ms, search"
+                       hx-target="#search-results"
+                       aria-label="Search all notes"
+                       aria-controls="search-results"
+                       aria-describedby="search-announcer">
+            </div>
+            <div id="search-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+            <div id="search-results" role="region" aria-label="Search results" aria-live="polite"></div>
+        </section>
+
         <section aria-labelledby="recent-notes-heading">
             <h2 id="recent-notes-heading">Recent notes</h2>
             {{if .Notes}}
