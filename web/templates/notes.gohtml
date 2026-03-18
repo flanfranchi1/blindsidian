@@ -11,7 +11,11 @@
     <div id="system-messages" role="status" aria-live="polite" class="sr-only"></div>
     
     <header>
+        {{if .Notebook}}
+        <h1>Notebook: {{.Notebook.Name}}</h1>
+        {{else}}
         <h1>Your Notes</h1>
+        {{end}}
         <nav aria-label="Main Navigation">
             <ul>
                 <li><a href="/logout">Logout</a></li>
@@ -20,6 +24,26 @@
     </header>
 
     <main id="main-content">
+        <nav aria-label="Notebooks">
+            <h2>Notebooks</h2>
+            <ul>
+            {{range .Notebooks}}
+                <li><a href="/notebooks/{{.ID}}">{{.Name}}</a></li>
+            {{end}}
+            </ul>
+            <section aria-labelledby="create-notebook-heading">
+                <h3 id="create-notebook-heading">New Notebook</h3>
+                <form method="post" action="/notebooks/create">
+                    <div>
+                        <label for="notebook-name">Notebook name</label>
+                        <input id="notebook-name" name="name" required aria-describedby="notebook-name-error">
+                        <div id="notebook-name-error" role="alert" aria-live="assertive">{{.NotebookNameError}}</div>
+                    </div>
+                    <button type="submit">Create Notebook</button>
+                </form>
+            </section>
+        </nav>
+
         <section aria-labelledby="create-note-heading">
             <h2 id="create-note-heading">Create a note</h2>
             {{if .Message}}
@@ -30,6 +54,15 @@
                     <label for="title">Title</label>
                     <input id="title" name="title" value="{{.CreateTitle}}" required aria-describedby="title-error">
                     <div id="title-error" role="alert" aria-live="assertive">{{.TitleError}}</div>
+                </div>
+                <div>
+                    <label for="notebook-select">Notebook</label>
+                    <select id="notebook-select" name="notebook_id">
+                        <option value="">None</option>
+                        {{range .Notebooks}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
                 </div>
                 <div>
                     <label for="content">Note content in Markdown</label>

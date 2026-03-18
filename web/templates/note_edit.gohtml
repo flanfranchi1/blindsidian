@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Editing: {{.Title}} - Blindsidian</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+    <div id="system-messages" role="status" aria-live="polite" class="sr-only"></div>
+
+    <header>
+        <nav aria-label="Breadcrumb">
+            <a href="/notes">Back to notes</a>
+        </nav>
+    </header>
+
+    <main id="main-content">
+        <form method="post" action="/notes/view/update">
+            <h1>Editing: {{.Title}}</h1>
+
+            <input type="hidden" name="original_title" value="{{.Title}}">
+
+            <div>
+                <label for="edit-title">Title</label>
+                <input id="edit-title" name="title" value="{{.Title}}" required aria-describedby="edit-title-error">
+                <div id="edit-title-error" role="alert" aria-live="assertive">{{.TitleError}}</div>
+            </div>
+
+            <div>
+                <label for="edit-notebook-select">Notebook</label>
+                <select id="edit-notebook-select" name="notebook_id">
+                    <option value="">None</option>
+                    {{range .Notebooks}}
+                    <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+
+            <div>
+                <label for="note-content-textarea">Note content in Markdown</label>
+                <span id="markdown-instructions" class="sr-only">Use markdown syntax. Save to preview.</span>
+                <textarea id="note-content-textarea"
+                          name="content"
+                          rows="20"
+                          required
+                          aria-describedby="markdown-instructions edit-content-error">{{.Raw}}</textarea>
+                <div id="edit-content-error" role="alert" aria-live="assertive">{{.ContentError}}</div>
+            </div>
+
+            <div>
+                <button type="submit">Save changes</button>
+                <button type="button" onclick="window.history.back()">Cancel</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            var textarea = document.getElementById('note-content-textarea');
+            if (textarea) {
+                textarea.focus();
+                document.getElementById('system-messages').innerText = "Editing mode active";
+                return;
+            }
+        });
+    </script>
+</body>
+</html>

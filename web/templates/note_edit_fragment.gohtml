@@ -14,21 +14,32 @@
     </div>
     
     <div>
+        <label for="edit-notebook-select">Notebook</label>
+        <select id="edit-notebook-select" name="notebook_id" aria-label="Select notebook for this note">
+            <option value="">None</option>
+            {{range .Notebooks}}
+            <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    <div>
         <label for="note-content-textarea">Note content in Markdown</label>
         <span id="markdown-instructions" class="sr-only">Use markdown syntax. Save to preview.</span>
         <textarea id="note-content-textarea" 
                   name="content" 
-                  rows="10" 
+                  rows="20" 
                   required 
                   aria-describedby="markdown-instructions edit-content-error">{{.Raw}}</textarea>
         <div id="edit-content-error" role="alert" aria-live="assertive">{{.ContentError}}</div>
     </div>
     
-    <button type="submit">Save</button>
+    <button type="submit">Save changes</button>
     <button type="button" 
-            hx-get="/notes/{{.ID}}" 
+            hx-get="/notes" 
             hx-target="#note-display-area" 
-            hx-swap="innerHTML">
+            hx-swap="innerHTML"
+            aria-label="Cancel editing and return to notes">
         Cancel
     </button>
 </form>

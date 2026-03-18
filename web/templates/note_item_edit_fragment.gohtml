@@ -14,6 +14,15 @@
         <textarea id="edit-content-{{.ID}}" name="content" rows="5" required aria-describedby="edit-content-error-{{.ID}}">{{.Content}}</textarea>
         <div id="edit-content-error-{{.ID}}" role="alert" aria-live="assertive">{{.ContentError}}</div>
       </div>
+      <div>
+        <label for="edit-notebook-{{.ID}}">Notebook</label>
+        <select id="edit-notebook-{{.ID}}" name="notebook_id">
+          <option value="">None</option>
+          {{range .Notebooks}}
+          <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+      </div>
       <button type="submit">Save</button>
       <button type="button" hx-get="/notes" hx-target="body" hx-swap="outerHTML">Cancel</button>
     </form>

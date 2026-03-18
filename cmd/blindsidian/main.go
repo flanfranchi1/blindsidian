@@ -228,7 +228,11 @@ func notesHandler(mgr *database.DatabaseManager, sessions *SessionStore) http.Ha
 
 		createTitle := r.URL.Query().Get("create")
 		message := r.URL.Query().Get("msg")
-		renderTemplate(w, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle})
+		notebooks, err := mgr.ListNotebooks(db)
+		if err != nil {
+			notebooks = []database.Notebook{}
+		}
+		renderTemplate(w, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks})
 	}
 }
 
@@ -334,7 +338,7 @@ func createNoteHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 			return
 		}
 
-		note := database.Note{ID: uuid.NewString(), Title: title, Content: content}
+		note := database.Note{ID: uuid.NewString(), Title: title, Content: content, NotebookID: r.FormValue("notebook_id")}
 		if err := mgr.CreateNote(db, note); err != nil {
 			http.Error(w, "unable to create note", http.StatusInternalServerError)
 			return
@@ -420,17 +424,24 @@ func noteActionHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 				return
 			}
 
-			// Ensure the template gets the keys it expects for data binding.
-			// The list edit fragment uses {{.Content}} and the full-page edit uses {{.Raw}}.
 			type editData struct {
-				ID      string
-				Title   string
-				Content string
-				Raw     string
+				ID           string
+				Title        string
+				Content      string
+				Raw          string
+				NotebookID   string
+				Notebooks    []database.Notebook
+				TitleError   string
+				ContentError string
+			}
+
+			notebooks, err := mgr.ListNotebooks(db)
+			if err != nil {
+				notebooks = []database.Notebook{}
 			}
 
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			templates.ExecuteTemplate(w, "note_item_edit_fragment", editData{ID: note.ID, Title: note.Title, Content: note.Content, Raw: note.Content})
+			templates.ExecuteTemplate(w, "note_item_edit_fragment", editData{ID: note.ID, Title: note.Title, Content: note.Content, Raw: note.Content, NotebookID: note.NotebookID, Notebooks: notebooks, TitleError: "", ContentError: ""})
 		case "update":
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -438,11 +449,13 @@ func noteActionHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 			}
 			title := r.FormValue("title")
 			content := r.FormValue("content")
+			notebookID := r.FormValue("notebook_id")
 			if title == "" || content == "" {
 				data := map[string]interface{}{
-					"ID":      noteID,
-					"Title":   title,
-					"Content": content,
+					"ID":         noteID,
+					"Title":      title,
+					"Content":    content,
+					"NotebookID": notebookID,
 				}
 				if title == "" {
 					data["TitleError"] = "Title is required"
@@ -450,11 +463,16 @@ func noteActionHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 				if content == "" {
 					data["ContentError"] = "Content is required"
 				}
+				notebooks, err := mgr.ListNotebooks(db)
+				if err != nil {
+					notebooks = []database.Notebook{}
+				}
+				data["Notebooks"] = notebooks
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				templates.ExecuteTemplate(w, "note_item_edit_fragment", data)
 				return
 			}
-			if err := mgr.UpdateNote(db, database.Note{ID: noteID, Title: title, Content: content}); err != nil {
+			if err := mgr.UpdateNote(db, database.Note{ID: noteID, Title: title, Content: content, NotebookID: notebookID}); err != nil {
 				http.Error(w, "unable to update note", http.StatusInternalServerError)
 				return
 			}
@@ -635,17 +653,28 @@ func viewNoteEditHandler(mgr *database.DatabaseManager, sessions *SessionStore) 
 			return
 		}
 
-		// Use a struct to ensure the edit fragment gets the keys it expects.
-		// The template relies on {{.Title}} and {{.Raw}} for the textarea content.
 		data := struct {
-			Title string
-			Raw   string
-			ID    string
+			Title        string
+			Raw          string
+			ID           string
+			NotebookID   string
+			Notebooks    []database.Notebook
+			TitleError   string
+			ContentError string
 		}{
-			Title: note.Title,
-			Raw:   note.Content,
-			ID:    note.ID,
+			Title:        note.Title,
+			Raw:          note.Content,
+			ID:           note.ID,
+			NotebookID:   note.NotebookID,
+			TitleError:   "",
+			ContentError: "",
 		}
+
+		notebooks, err := mgr.ListNotebooks(db)
+		if err != nil {
+			notebooks = []database.Notebook{}
+		}
+		data.Notebooks = notebooks
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		templates.ExecuteTemplate(w, "note_edit_fragment", data)
@@ -668,21 +697,31 @@ func viewNoteUpdateHandler(mgr *database.DatabaseManager, sessions *SessionStore
 		originalTitle := r.FormValue("original_title")
 		title := r.FormValue("title")
 		content := r.FormValue("content")
+		notebookID := r.FormValue("notebook_id")
 		if title == "" || content == "" {
 			data := struct {
 				Title        string
 				Raw          string
+				NotebookID   string
 				TitleError   string
 				ContentError string
+				Notebooks    []database.Notebook
 			}{
-				Title: title,
-				Raw:   content,
+				Title:      title,
+				Raw:        content,
+				NotebookID: notebookID,
 			}
 			if title == "" {
 				data.TitleError = "Title is required"
 			}
 			if content == "" {
 				data.ContentError = "Content is required"
+			}
+			tempDB, err := mgr.OpenUserDB(userID)
+			if err == nil {
+				defer tempDB.Close()
+				notebooks, _ := mgr.ListNotebooks(tempDB)
+				data.Notebooks = notebooks
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			templates.ExecuteTemplate(w, "note_edit_fragment", data)
@@ -720,6 +759,7 @@ func viewNoteUpdateHandler(mgr *database.DatabaseManager, sessions *SessionStore
 
 		note.Title = title
 		note.Content = content
+		note.NotebookID = notebookID
 		if err := mgr.UpdateNote(db, *note); err != nil {
 			http.Error(w, "unable to update note", http.StatusInternalServerError)
 			return
@@ -797,6 +837,118 @@ func logoutHandler(sessions *SessionStore) http.HandlerFunc {
 	}
 }
 
+func createNotebookHandler(mgr *database.DatabaseManager, sessions *SessionStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := currentUserID(r, sessions)
+		if !ok {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		name := r.FormValue("name")
+		if name == "" {
+			http.Redirect(w, r, "/notes?msg=Notebook+name+required", http.StatusSeeOther)
+			return
+		}
+
+		db, err := mgr.OpenUserDB(userID)
+		if err != nil {
+			http.Error(w, "unable to open user database", http.StatusInternalServerError)
+			return
+		}
+		defer db.Close()
+
+		notebook := database.Notebook{ID: uuid.NewString(), Name: name}
+		if err := mgr.CreateNotebook(db, notebook); err != nil {
+			http.Error(w, "unable to create notebook", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/notes?msg=Notebook+created", http.StatusSeeOther)
+	}
+}
+
+func notebookViewHandler(mgr *database.DatabaseManager, sessions *SessionStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := currentUserID(r, sessions)
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		notebookID := strings.TrimPrefix(r.URL.Path, "/notebooks/")
+		notebookID = strings.TrimSuffix(notebookID, "/")
+
+		db, err := mgr.OpenUserDB(userID)
+		if err != nil {
+			http.Error(w, "unable to open user database", http.StatusInternalServerError)
+			return
+		}
+		defer db.Close()
+
+		notebook, err := mgr.GetNotebookByID(db, notebookID)
+		if err != nil || notebook == nil {
+			http.Error(w, "notebook not found", http.StatusNotFound)
+			return
+		}
+
+		notes, err := mgr.GetNotesByNotebookID(db, notebookID)
+		if err != nil {
+			http.Error(w, "unable to get notes", http.StatusInternalServerError)
+			return
+		}
+
+		type RenderNote struct {
+			ID           string
+			Title        string
+			Content      string
+			UpdatedAt    string
+			RenderedHTML template.HTML
+			NotebookID   string
+		}
+
+		noteExists := func(title string) (string, bool, error) {
+			n, err := mgr.GetNoteByTitle(db, title)
+			if err != nil {
+				return "", false, err
+			}
+			if n == nil {
+				return "", false, nil
+			}
+			return n.ID, true, nil
+		}
+
+		rendered := []RenderNote{}
+		for _, note := range notes {
+			htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteExists)
+			if err != nil {
+				http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+				return
+			}
+			rendered = append(rendered, RenderNote{
+				ID:           note.ID,
+				Title:        note.Title,
+				Content:      note.Content,
+				UpdatedAt:    note.UpdatedAt,
+				RenderedHTML: template.HTML(htmlContent),
+				NotebookID:   note.NotebookID,
+			})
+		}
+
+		notebooks, err := mgr.ListNotebooks(db)
+		if err != nil {
+			notebooks = []database.Notebook{}
+		}
+
+		renderTemplate(w, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Notebooks": notebooks, "Notebook": notebook})
+	}
+}
+
 func main() {
 	mgr := database.NewManager("./storage")
 	systemDB, err := mgr.InitSystemDB()
@@ -814,6 +966,8 @@ func main() {
 	http.HandleFunc("/login", loginHandler(mgr, systemDB, sessions))
 	http.HandleFunc("/notes", notesHandler(mgr, sessions))
 	http.HandleFunc("/notes/create", createNoteHandler(mgr, sessions))
+	http.HandleFunc("/notebooks/create", createNotebookHandler(mgr, sessions))
+	http.HandleFunc("/notebooks/", notebookViewHandler(mgr, sessions))
 	http.HandleFunc("/notes/view", viewNoteHandler(mgr, sessions))
 	http.HandleFunc("/notes/view/edit", viewNoteEditHandler(mgr, sessions))
 	http.HandleFunc("/notes/view/update", viewNoteUpdateHandler(mgr, sessions))

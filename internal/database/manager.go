@@ -22,10 +22,17 @@ type User struct {
 }
 
 type Note struct {
+	ID         string
+	Title      string
+	Content    string
+	UpdatedAt  string
+	NotebookID string
+}
+
+type Notebook struct {
 	ID        string
-	Title     string
-	Content   string
-	UpdatedAt string
+	Name      string
+	CreatedAt string
 }
 
 func NewManager(basePath string) *DatabaseManager {
@@ -100,8 +107,8 @@ func (m *DatabaseManager) CreateNote(db *sql.DB, note Note) error {
 		}
 	}()
 
-	insert := `INSERT INTO notes (id, title, content) VALUES (?, ?, ?);`
-	if _, err = tx.Exec(insert, note.ID, note.Title, note.Content); err != nil {
+	insert := `INSERT INTO notes (id, title, content, notebook_id) VALUES (?, ?, ?, ?);`
+	if _, err = tx.Exec(insert, note.ID, note.Title, note.Content, note.NotebookID); err != nil {
 		return fmt.Errorf("unable to create note: %w", err)
 	}
 	if _, err = tx.Exec(`INSERT INTO notes_fts (id, title, content) VALUES (?, ?, ?);`, note.ID, note.Title, note.Content); err != nil {
@@ -114,7 +121,7 @@ func (m *DatabaseManager) CreateNote(db *sql.DB, note Note) error {
 }
 
 func (m *DatabaseManager) ListNotes(db *sql.DB) ([]Note, error) {
-	query := `SELECT id, title, content, updated_at FROM notes ORDER BY updated_at DESC LIMIT 100;`
+	query := `SELECT id, title, content, updated_at, COALESCE(notebook_id, '') FROM notes ORDER BY updated_at DESC LIMIT 100;`
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list notes: %w", err)
@@ -124,7 +131,7 @@ func (m *DatabaseManager) ListNotes(db *sql.DB) ([]Note, error) {
 	notes := []Note{}
 	for rows.Next() {
 		n := Note{}
-		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UpdatedAt); err != nil {
+		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UpdatedAt, &n.NotebookID); err != nil {
 			return nil, fmt.Errorf("unable to scan note: %w", err)
 		}
 		notes = append(notes, n)
@@ -133,10 +140,10 @@ func (m *DatabaseManager) ListNotes(db *sql.DB) ([]Note, error) {
 }
 
 func (m *DatabaseManager) GetNoteByID(db *sql.DB, noteID string) (*Note, error) {
-	query := `SELECT id, title, content, updated_at FROM notes WHERE id = ?;`
+	query := `SELECT id, title, content, updated_at, COALESCE(notebook_id, '') FROM notes WHERE id = ?;`
 	note := &Note{}
 	row := db.QueryRow(query, noteID)
-	if err := row.Scan(&note.ID, &note.Title, &note.Content, &note.UpdatedAt); err != nil {
+	if err := row.Scan(&note.ID, &note.Title, &note.Content, &note.UpdatedAt, &note.NotebookID); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -146,10 +153,10 @@ func (m *DatabaseManager) GetNoteByID(db *sql.DB, noteID string) (*Note, error) 
 }
 
 func (m *DatabaseManager) GetNoteByTitle(db *sql.DB, title string) (*Note, error) {
-	query := `SELECT id, title, content, updated_at FROM notes WHERE lower(title) = lower(?) LIMIT 1;`
+	query := `SELECT id, title, content, updated_at, COALESCE(notebook_id, '') FROM notes WHERE lower(title) = lower(?) LIMIT 1;`
 	note := &Note{}
 	row := db.QueryRow(query, title)
-	if err := row.Scan(&note.ID, &note.Title, &note.Content, &note.UpdatedAt); err != nil {
+	if err := row.Scan(&note.ID, &note.Title, &note.Content, &note.UpdatedAt, &note.NotebookID); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -191,8 +198,8 @@ func (m *DatabaseManager) UpdateNote(db *sql.DB, note Note) error {
 		}
 	}()
 
-	update := `UPDATE notes SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;`
-	if _, err = tx.Exec(update, note.Title, note.Content, note.ID); err != nil {
+	update := `UPDATE notes SET title = ?, content = ?, notebook_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;`
+	if _, err = tx.Exec(update, note.Title, note.Content, note.NotebookID, note.ID); err != nil {
 		return fmt.Errorf("unable to update note: %w", err)
 	}
 	if _, err = tx.Exec(`DELETE FROM notes_fts WHERE id = ?;`, note.ID); err != nil {
@@ -261,7 +268,7 @@ func (m *DatabaseManager) DeleteNoteLinks(db *sql.DB, sourceID string) error {
 }
 
 func (m *DatabaseManager) GetBacklinks(db *sql.DB, targetID string) ([]Note, error) {
-	query := `SELECT n.id, n.title, n.content, n.updated_at FROM notes n JOIN note_links l ON n.id = l.source_id WHERE l.target_id = ? ORDER BY n.updated_at DESC;`
+	query := `SELECT n.id, n.title, n.content, n.updated_at, COALESCE(n.notebook_id, '') FROM notes n JOIN note_links l ON n.id = l.source_id WHERE l.target_id = ? ORDER BY n.updated_at DESC;`
 	rows, err := db.Query(query, targetID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query backlinks: %w", err)
@@ -271,7 +278,7 @@ func (m *DatabaseManager) GetBacklinks(db *sql.DB, targetID string) ([]Note, err
 	notes := []Note{}
 	for rows.Next() {
 		n := Note{}
-		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UpdatedAt); err != nil {
+		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UpdatedAt, &n.NotebookID); err != nil {
 			return nil, fmt.Errorf("unable to scan backlink: %w", err)
 		}
 		notes = append(notes, n)
@@ -299,6 +306,40 @@ func (m *DatabaseManager) ensureUserSchema(db *sql.DB) error {
 	if _, err := db.Exec(createLinksTable); err != nil {
 		return fmt.Errorf("unable to ensure note_links table: %w", err)
 	}
+
+	createNotebooksTable := `CREATE TABLE IF NOT EXISTS notebooks (id TEXT PRIMARY KEY, name TEXT NOT NULL COLLATE NOCASE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);`
+	if _, err := db.Exec(createNotebooksTable); err != nil {
+		return fmt.Errorf("unable to ensure notebooks table: %w", err)
+	}
+
+	alterNotesTable := `PRAGMA table_info(notes);`
+	rows, err := db.Query(alterNotesTable)
+	if err == nil {
+		defer rows.Close()
+		hasNotebookID := false
+		for rows.Next() {
+			var cid int
+			var name string
+			var typeVal string
+			var notnull int
+			var dfltValue interface{}
+			var pk int
+			if err := rows.Scan(&cid, &name, &typeVal, &notnull, &dfltValue, &pk); err == nil && name == "notebook_id" {
+				hasNotebookID = true
+			}
+		}
+		if !hasNotebookID {
+			if _, err := db.Exec(`ALTER TABLE notes ADD COLUMN notebook_id TEXT;`); err != nil {
+				return fmt.Errorf("unable to alter notes table: %w", err)
+			}
+		}
+	}
+
+	indexSQL := `CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON notes(notebook_id);`
+	if _, err := db.Exec(indexSQL); err != nil {
+		return fmt.Errorf("unable to create notebook_id index: %w", err)
+	}
+
 	return nil
 }
 
@@ -337,4 +378,64 @@ func (m *DatabaseManager) GetUserByEmail(db *sql.DB, email string) (*User, error
 		return nil, fmt.Errorf("unable to query user by email: %w", err)
 	}
 	return user, nil
+}
+
+func (m *DatabaseManager) CreateNotebook(db *sql.DB, notebook Notebook) error {
+	insert := `INSERT INTO notebooks (id, name) VALUES (?, ?);`
+	_, err := db.Exec(insert, notebook.ID, notebook.Name)
+	if err != nil {
+		return fmt.Errorf("unable to create notebook: %w", err)
+	}
+	return nil
+}
+
+func (m *DatabaseManager) ListNotebooks(db *sql.DB) ([]Notebook, error) {
+	query := `SELECT id, name, created_at FROM notebooks ORDER BY created_at DESC;`
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list notebooks: %w", err)
+	}
+	defer rows.Close()
+
+	notebooks := []Notebook{}
+	for rows.Next() {
+		n := Notebook{}
+		if err := rows.Scan(&n.ID, &n.Name, &n.CreatedAt); err != nil {
+			return nil, fmt.Errorf("unable to scan notebook: %w", err)
+		}
+		notebooks = append(notebooks, n)
+	}
+	return notebooks, nil
+}
+
+func (m *DatabaseManager) GetNotebookByID(db *sql.DB, notebookID string) (*Notebook, error) {
+	query := `SELECT id, name, created_at FROM notebooks WHERE id = ?;`
+	notebook := &Notebook{}
+	row := db.QueryRow(query, notebookID)
+	if err := row.Scan(&notebook.ID, &notebook.Name, &notebook.CreatedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unable to get notebook: %w", err)
+	}
+	return notebook, nil
+}
+
+func (m *DatabaseManager) GetNotesByNotebookID(db *sql.DB, notebookID string) ([]Note, error) {
+	query := `SELECT id, title, content, updated_at, notebook_id FROM notes WHERE notebook_id = ? ORDER BY updated_at DESC;`
+	rows, err := db.Query(query, notebookID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get notes by notebook: %w", err)
+	}
+	defer rows.Close()
+
+	notes := []Note{}
+	for rows.Next() {
+		n := Note{}
+		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UpdatedAt, &n.NotebookID); err != nil {
+			return nil, fmt.Errorf("unable to scan note: %w", err)
+		}
+		notes = append(notes, n)
+	}
+	return notes, nil
 }
