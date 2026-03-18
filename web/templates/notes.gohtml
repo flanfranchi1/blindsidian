@@ -28,11 +28,13 @@
             <form method="post" action="/notes/create">
                 <div>
                     <label for="title">Title</label>
-                    <input id="title" name="title" value="{{.CreateTitle}}" required>
+                    <input id="title" name="title" value="{{.CreateTitle}}" required aria-describedby="title-error">
+                    <div id="title-error" role="alert" aria-live="assertive">{{.TitleError}}</div>
                 </div>
                 <div>
                     <label for="content">Note content in Markdown</label>
-                    <textarea id="content" name="content" rows="5" required></textarea>
+                    <textarea id="content" name="content" rows="5" required aria-describedby="content-error">{{.Content}}</textarea>
+                    <div id="content-error" role="alert" aria-live="assertive">{{.ContentError}}</div>
                 </div>
                 <button type="submit">Save note</button>
             </form>

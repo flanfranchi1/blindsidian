@@ -9,7 +9,8 @@
     
     <div>
         <label for="edit-title">Title</label>
-        <input id="edit-title" name="title" value="{{.Title}}" required>
+        <input id="edit-title" name="title" value="{{.Title}}" required aria-describedby="edit-title-error">
+        <div id="edit-title-error" role="alert" aria-live="assertive">{{.TitleError}}</div>
     </div>
     
     <div>
@@ -19,7 +20,8 @@
                   name="content" 
                   rows="10" 
                   required 
-                  aria-describedby="markdown-instructions">{{.Raw}}</textarea>
+                  aria-describedby="markdown-instructions edit-content-error">{{.Raw}}</textarea>
+        <div id="edit-content-error" role="alert" aria-live="assertive">{{.ContentError}}</div>
     </div>
     
     <button type="submit">Save</button>

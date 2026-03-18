@@ -6,11 +6,13 @@
       <input type="hidden" name="original_id" value="{{.ID}}">
       <div>
         <label for="edit-title-{{.ID}}">Title</label>
-        <input id="edit-title-{{.ID}}" name="title" value="{{.Title}}" required>
+        <input id="edit-title-{{.ID}}" name="title" value="{{.Title}}" required aria-describedby="edit-title-error-{{.ID}}">
+        <div id="edit-title-error-{{.ID}}" role="alert" aria-live="assertive">{{.TitleError}}</div>
       </div>
       <div>
         <label for="edit-content-{{.ID}}">Note content in Markdown</label>
-        <textarea id="edit-content-{{.ID}}" name="content" rows="5" required>{{.Content}}</textarea>
+        <textarea id="edit-content-{{.ID}}" name="content" rows="5" required aria-describedby="edit-content-error-{{.ID}}">{{.Content}}</textarea>
+        <div id="edit-content-error-{{.ID}}" role="alert" aria-live="assertive">{{.ContentError}}</div>
       </div>
       <button type="submit">Save</button>
       <button type="button" hx-get="/notes" hx-target="body" hx-swap="outerHTML">Cancel</button>

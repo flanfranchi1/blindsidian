@@ -251,7 +251,63 @@ func createNoteHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 		title := r.FormValue("title")
 		content := r.FormValue("content")
 		if title == "" || content == "" {
-			http.Error(w, "title and content are required", http.StatusBadRequest)
+			db, err := mgr.OpenUserDB(userID)
+			if err != nil {
+				http.Error(w, "unable to open user database", http.StatusInternalServerError)
+				return
+			}
+			defer db.Close()
+
+			notes, err := mgr.ListNotes(db)
+			if err != nil {
+				http.Error(w, "unable to load notes", http.StatusInternalServerError)
+				return
+			}
+
+			type RenderNote struct {
+				ID           string
+				Title        string
+				Content      string
+				UpdatedAt    string
+				RenderedHTML template.HTML
+			}
+
+			noteExists := func(title string) (bool, error) {
+				n, err := mgr.GetNoteByTitle(db, title)
+				if err != nil {
+					return false, err
+				}
+				return n != nil, nil
+			}
+
+			rendered := []RenderNote{}
+			for _, note := range notes {
+				htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteExists)
+				if err != nil {
+					http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+					return
+				}
+				rendered = append(rendered, RenderNote{
+					ID:           note.ID,
+					Title:        note.Title,
+					Content:      note.Content,
+					UpdatedAt:    note.UpdatedAt,
+					RenderedHTML: template.HTML(htmlContent),
+				})
+			}
+
+			data := map[string]interface{}{
+				"Notes":       rendered,
+				"CreateTitle": title,
+				"Content":     content,
+			}
+			if title == "" {
+				data["TitleError"] = "Title is required"
+			}
+			if content == "" {
+				data["ContentError"] = "Content is required"
+			}
+			renderTemplate(w, "notes.gohtml", data)
 			return
 		}
 
@@ -334,7 +390,19 @@ func noteActionHandler(mgr *database.DatabaseManager, sessions *SessionStore) ht
 			title := r.FormValue("title")
 			content := r.FormValue("content")
 			if title == "" || content == "" {
-				http.Error(w, "invalid input", http.StatusBadRequest)
+				data := map[string]interface{}{
+					"ID":      noteID,
+					"Title":   title,
+					"Content": content,
+				}
+				if title == "" {
+					data["TitleError"] = "Title is required"
+				}
+				if content == "" {
+					data["ContentError"] = "Content is required"
+				}
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				templates.ExecuteTemplate(w, "note_item_edit_fragment", data)
 				return
 			}
 			if err := mgr.UpdateNote(db, database.Note{ID: noteID, Title: title, Content: content}); err != nil {
@@ -516,8 +584,24 @@ func viewNoteUpdateHandler(mgr *database.DatabaseManager, sessions *SessionStore
 		originalTitle := r.FormValue("original_title")
 		title := r.FormValue("title")
 		content := r.FormValue("content")
-		if originalTitle == "" || title == "" || content == "" {
-			http.Error(w, "title and content are required", http.StatusBadRequest)
+		if title == "" || content == "" {
+			data := struct {
+				Title        string
+				Raw          string
+				TitleError   string
+				ContentError string
+			}{
+				Title: title,
+				Raw:   content,
+			}
+			if title == "" {
+				data.TitleError = "Title is required"
+			}
+			if content == "" {
+				data.ContentError = "Content is required"
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			templates.ExecuteTemplate(w, "note_edit_fragment", data)
 			return
 		}
 
