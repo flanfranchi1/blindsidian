@@ -868,7 +868,19 @@ func createNotebookHandler(mgr *database.DatabaseManager, sessions *SessionStore
 			http.Error(w, "unable to create notebook", http.StatusInternalServerError)
 			return
 		}
+		indexContent := "## Index\n\nWelcome to your new notebook. Use headings to create chapters.\n\n### Chapter 1\n[[Write your first note here]]\n\n#index"
 
+		indexNote := database.Note{
+			ID:         uuid.NewString(),
+			Title:      "Index - " + name,
+			Content:    indexContent,
+			NotebookID: notebook.ID,
+		}
+
+		if err := mgr.CreateNote(db, indexNote); err != nil {
+			http.Error(w, "unable to create index note", http.StatusInternalServerError)
+			return
+		}
 		http.Redirect(w, r, "/notes?msg=Notebook+created", http.StatusSeeOther)
 	}
 }
