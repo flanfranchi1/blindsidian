@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -30,6 +31,7 @@ func (s *Server) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			existingUser, err := s.DBManager.GetUserByEmail(s.SystemDB, email)
 			if err != nil {
+				log.Printf("SignupHandler: GetUserByEmail: %v", err)
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
@@ -39,22 +41,26 @@ func (s *Server) SignupHandler(w http.ResponseWriter, r *http.Request) {
 				uid := uuid.NewString()
 				hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 				if err != nil {
+					log.Printf("SignupHandler: GenerateFromPassword: %v", err)
 					http.Error(w, "unable to hash password", http.StatusInternalServerError)
 					return
 				}
 
 				if err := s.DBManager.CreateSystemUser(s.SystemDB, database.User{ID: uid, Email: email, PasswordHash: string(hash)}); err != nil {
+					log.Printf("SignupHandler: CreateSystemUser: %v", err)
 					http.Error(w, "unable to create user", http.StatusInternalServerError)
 					return
 				}
 
 				if _, err := s.DBManager.CreateUserDB(uid); err != nil {
+					log.Printf("SignupHandler: CreateUserDB: %v", err)
 					http.Error(w, "unable to initialize user storage", http.StatusInternalServerError)
 					return
 				}
 
 				token, err := s.SessionStore.CreateSession(uid)
 				if err != nil {
+					log.Printf("SignupHandler: CreateSession: %v", err)
 					http.Error(w, "unable to create session", http.StatusInternalServerError)
 					return
 				}
@@ -87,6 +93,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			user, err := s.DBManager.GetUserByEmail(s.SystemDB, email)
 			if err != nil {
+				log.Printf("LoginHandler: GetUserByEmail: %v", err)
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
@@ -97,6 +104,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				token, err := s.SessionStore.CreateSession(user.ID)
 				if err != nil {
+					log.Printf("LoginHandler: CreateSession: %v", err)
 					http.Error(w, "unable to create session", http.StatusInternalServerError)
 					return
 				}

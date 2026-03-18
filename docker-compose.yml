@@ -8,8 +8,5 @@ services:
       STORAGE_PATH: "/data"
       SESSION_NAME: "${SESSION_NAME:-notty_session}"
     volumes:
-      - notty_data:/data
+      - ./storage:/data:Z,U
     restart: unless-stopped
-
-volumes:
-  notty_data:

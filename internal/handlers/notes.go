@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,6 +18,7 @@ import (
 func (s *Server) RenderTemplate(w http.ResponseWriter, name string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.Templates.ExecuteTemplate(w, name, data); err != nil {
+		log.Printf("RenderTemplate (%s): ExecuteTemplate: %v", name, err)
 		http.Error(w, "unable to render page", http.StatusInternalServerError)
 	}
 }
@@ -30,6 +32,7 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("NotesHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -37,6 +40,7 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 
 	notes, err := s.DBManager.ListNotes(db)
 	if err != nil {
+		log.Printf("NotesHandler: ListNotes: %v", err)
 		http.Error(w, "unable to load notes", http.StatusInternalServerError)
 		return
 	}
@@ -64,6 +68,7 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 	for _, note := range notes {
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 		if err != nil {
+			log.Printf("NotesHandler: RenderMarkdownWithWikiLinks: %v", err)
 			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
 			return
 		}
@@ -108,6 +113,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	if title == "" || content == "" {
 		db, err := s.DBManager.OpenUserDB(userID)
 		if err != nil {
+			log.Printf("CreateNoteHandler: OpenUserDB (validation): %v", err)
 			http.Error(w, "unable to open user database", http.StatusInternalServerError)
 			return
 		}
@@ -115,6 +121,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 		notes, err := s.DBManager.ListNotes(db)
 		if err != nil {
+			log.Printf("CreateNoteHandler: ListNotes: %v", err)
 			http.Error(w, "unable to load notes", http.StatusInternalServerError)
 			return
 		}
@@ -142,6 +149,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 		for _, note := range notes {
 			htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 			if err != nil {
+				log.Printf("CreateNoteHandler: RenderMarkdownWithWikiLinks: %v", err)
 				http.Error(w, "unable to render markdown", http.StatusInternalServerError)
 				return
 			}
@@ -171,6 +179,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("CreateNoteHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -178,6 +187,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	existing, err := s.DBManager.GetNoteByTitle(db, title)
 	if err != nil {
+		log.Printf("CreateNoteHandler: GetNoteByTitle (existing): %v", err)
 		http.Error(w, "unable to check existing note", http.StatusInternalServerError)
 		return
 	}
@@ -188,6 +198,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	note := database.Note{ID: uuid.NewString(), Title: title, Content: content, NotebookID: r.FormValue("notebook_id")}
 	if err := s.DBManager.CreateNote(db, note); err != nil {
+		log.Printf("CreateNoteHandler: CreateNote: %v", err)
 		http.Error(w, "unable to create note", http.StatusInternalServerError)
 		return
 	}
@@ -220,6 +231,7 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("NoteActionHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -230,12 +242,18 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 	if len(parts) == 1 && r.Method == http.MethodGet {
 		noteID := parts[0]
 		note, err := s.DBManager.GetNoteByID(db, noteID)
-		if err != nil || note == nil {
+		if err != nil {
+			log.Printf("NoteActionHandler: GetNoteByID: %v", err)
+			http.Error(w, "note not found", http.StatusNotFound)
+			return
+		}
+		if note == nil {
 			http.Error(w, "note not found", http.StatusNotFound)
 			return
 		}
 		backlinks, err := s.DBManager.GetBacklinks(db, noteID)
 		if err != nil {
+			log.Printf("NoteActionHandler: GetBacklinks: %v", err)
 			http.Error(w, "unable to get backlinks", http.StatusInternalServerError)
 			return
 		}
@@ -251,6 +269,7 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 		if err != nil {
+			log.Printf("NoteActionHandler: RenderMarkdownWithWikiLinks: %v", err)
 			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
 			return
 		}
@@ -268,7 +287,12 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 	switch action {
 	case "edit":
 		note, err := s.DBManager.GetNoteByID(db, noteID)
-		if err != nil || note == nil {
+		if err != nil {
+			log.Printf("NoteActionHandler edit: GetNoteByID: %v", err)
+			http.Error(w, "note not found", http.StatusNotFound)
+			return
+		}
+		if note == nil {
 			http.Error(w, "note not found", http.StatusNotFound)
 			return
 		}
@@ -322,6 +346,7 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.DBManager.UpdateNote(db, database.Note{ID: noteID, Title: title, Content: content, NotebookID: notebookID}); err != nil {
+			log.Printf("NoteActionHandler update: UpdateNote: %v", err)
 			http.Error(w, "unable to update note", http.StatusInternalServerError)
 			return
 		}
@@ -344,7 +369,12 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		s.DBManager.InsertNoteTags(db, noteID, tags)
 
 		note, err := s.DBManager.GetNoteByID(db, noteID)
-		if err != nil || note == nil {
+		if err != nil {
+			log.Printf("NoteActionHandler update: GetNoteByID (after update): %v", err)
+			http.Error(w, "note not found after update", http.StatusInternalServerError)
+			return
+		}
+		if note == nil {
 			http.Error(w, "note not found after update", http.StatusInternalServerError)
 			return
 		}
@@ -360,6 +390,7 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 		if err != nil {
+			log.Printf("NoteActionHandler update: RenderMarkdownWithWikiLinks: %v", err)
 			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
 			return
 		}
@@ -375,6 +406,7 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.DBManager.DeleteNote(db, noteID); err != nil {
+			log.Printf("NoteActionHandler delete: DeleteNote: %v", err)
 			http.Error(w, "unable to delete note", http.StatusInternalServerError)
 			return
 		}
@@ -426,6 +458,7 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("ViewNoteHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -433,6 +466,7 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	note, err := s.DBManager.GetNoteByTitle(db, title)
 	if err != nil {
+		log.Printf("ViewNoteHandler: GetNoteByTitle: %v", err)
 		http.Error(w, "unable to get note", http.StatusInternalServerError)
 		return
 	}
@@ -443,6 +477,7 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.isHTMXRequest(r) {
 		if err := s.renderNoteViewFragment(w, note, db); err != nil {
+			log.Printf("ViewNoteHandler: renderNoteViewFragment: %v", err)
 			http.Error(w, "unable to render note fragment", http.StatusInternalServerError)
 		}
 		return
@@ -460,11 +495,13 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 	if err != nil {
+		log.Printf("ViewNoteHandler: RenderMarkdownWithWikiLinks: %v", err)
 		http.Error(w, "unable to render markdown", http.StatusInternalServerError)
 		return
 	}
 	backlinks, err := s.DBManager.GetBacklinks(db, note.ID)
 	if err != nil {
+		log.Printf("ViewNoteHandler: GetBacklinks: %v", err)
 		http.Error(w, "unable to get backlinks", http.StatusInternalServerError)
 		return
 	}
@@ -486,6 +523,7 @@ func (s *Server) ViewNoteEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("ViewNoteEditHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -493,6 +531,7 @@ func (s *Server) ViewNoteEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	note, err := s.DBManager.GetNoteByTitle(db, title)
 	if err != nil {
+		log.Printf("ViewNoteEditHandler: GetNoteByTitle: %v", err)
 		http.Error(w, "unable to get note", http.StatusInternalServerError)
 		return
 	}
@@ -576,6 +615,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("ViewNoteUpdateHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -583,6 +623,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	note, err := s.DBManager.GetNoteByTitle(db, originalTitle)
 	if err != nil {
+		log.Printf("ViewNoteUpdateHandler: GetNoteByTitle (original): %v", err)
 		http.Error(w, "unable to find note", http.StatusInternalServerError)
 		return
 	}
@@ -594,6 +635,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if originalTitle != title {
 		existing, err := s.DBManager.GetNoteByTitle(db, title)
 		if err != nil {
+			log.Printf("ViewNoteUpdateHandler: GetNoteByTitle (conflict): %v", err)
 			http.Error(w, "unable to check existing title", http.StatusInternalServerError)
 			return
 		}
@@ -607,6 +649,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	note.Content = content
 	note.NotebookID = notebookID
 	if err := s.DBManager.UpdateNote(db, *note); err != nil {
+		log.Printf("ViewNoteUpdateHandler: UpdateNote: %v", err)
 		http.Error(w, "unable to update note", http.StatusInternalServerError)
 		return
 	}
@@ -629,6 +672,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	s.DBManager.InsertNoteTags(db, note.ID, tags)
 
 	if err := s.renderNoteViewFragment(w, note, db); err != nil {
+		log.Printf("ViewNoteUpdateHandler: renderNoteViewFragment: %v", err)
 		http.Error(w, "unable to render updated note", http.StatusInternalServerError)
 		return
 	}
@@ -650,6 +694,7 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
+		log.Printf("SearchHandler: OpenUserDB: %v", err)
 		http.Error(w, "unable to open user database", http.StatusInternalServerError)
 		return
 	}
@@ -657,6 +702,7 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	results, err := s.DBManager.SearchNotes(db, q)
 	if err != nil {
+		log.Printf("SearchHandler: SearchNotes: %v", err)
 		http.Error(w, "unable to search notes", http.StatusInternalServerError)
 		return
 	}
