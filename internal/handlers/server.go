@@ -9,8 +9,9 @@ import (
 )
 
 type Server struct {
-	DBManager    *database.DatabaseManager
-	SessionStore *auth.SessionStore
-	SystemDB     *sql.DB
-	Templates    *template.Template
+	DBManager         *database.DatabaseManager
+	SessionStore      *auth.SessionStore
+	SystemDB          *sql.DB
+	Templates         *template.Template
+	SessionCookieName string
 }

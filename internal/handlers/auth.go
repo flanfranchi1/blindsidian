@@ -9,13 +9,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	sessionCookieName = "notty_session"
-	sessionDuration   = 24 * time.Hour
-)
+const sessionDuration = 24 * time.Hour
 
 func (s *Server) currentUserID(r *http.Request) (string, bool) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(s.SessionCookieName)
 	if err != nil {
 		return "", false
 	}
@@ -63,7 +60,7 @@ func (s *Server) SignupHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				http.SetCookie(w, &http.Cookie{
-					Name:     sessionCookieName,
+					Name:     s.SessionCookieName,
 					Value:    token,
 					Path:     "/",
 					HttpOnly: true,
@@ -104,7 +101,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				http.SetCookie(w, &http.Cookie{
-					Name:     sessionCookieName,
+					Name:     s.SessionCookieName,
 					Value:    token,
 					Path:     "/",
 					HttpOnly: true,
@@ -121,10 +118,10 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(s.SessionCookieName)
 	if err == nil {
 		s.SessionStore.DeleteSession(cookie.Value)
-		http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Value: "", Path: "/", Expires: time.Unix(0, 0), MaxAge: -1})
+		http.SetCookie(w, &http.Cookie{Name: s.SessionCookieName, Value: "", Path: "/", Expires: time.Unix(0, 0), MaxAge: -1})
 	}
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
