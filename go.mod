@@ -1,4 +1,4 @@
-module github.com/felan/blindsidian
+module github.com/flanfranchi1/notty
 
 go 1.22
 

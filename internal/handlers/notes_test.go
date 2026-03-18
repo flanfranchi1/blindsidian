@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/felan/blindsidian/internal/auth"
-	"github.com/felan/blindsidian/internal/database"
+	"github.com/flanfranchi1/notty/internal/auth"
+	"github.com/flanfranchi1/notty/internal/database"
 )
 
 func TestNotesHandler_NoSession(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"html/template"
 
-	"github.com/felan/blindsidian/internal/auth"
-	"github.com/felan/blindsidian/internal/database"
+	"github.com/flanfranchi1/notty/internal/auth"
+	"github.com/flanfranchi1/notty/internal/database"
 )
 
 type Server struct {

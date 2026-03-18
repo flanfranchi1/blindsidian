@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/felan/blindsidian/internal/database"
+	"github.com/flanfranchi1/notty/internal/database"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	sessionCookieName = "blindsidian_session"
+	sessionCookieName = "notty_session"
 	sessionDuration   = 24 * time.Hour
 )
 

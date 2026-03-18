@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/felan/blindsidian/internal/database"
-	"github.com/felan/blindsidian/internal/markup"
+	"github.com/flanfranchi1/notty/internal/database"
+	"github.com/flanfranchi1/notty/internal/markup"
 	"github.com/google/uuid"
 )
 

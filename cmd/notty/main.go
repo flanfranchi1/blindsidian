@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/felan/blindsidian/internal/auth"
-	"github.com/felan/blindsidian/internal/database"
-	"github.com/felan/blindsidian/internal/handlers"
+	"github.com/flanfranchi1/notty/internal/auth"
+	"github.com/flanfranchi1/notty/internal/database"
+	"github.com/flanfranchi1/notty/internal/handlers"
 )
 
 func main() {
