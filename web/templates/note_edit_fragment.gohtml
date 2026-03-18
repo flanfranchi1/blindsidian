@@ -1,46 +1,57 @@
 {{define "note_edit_fragment"}}
-<form hx-post="/notes/view/update" 
-      hx-target="#note-display-area" 
+<form hx-post="/notes/view/update"
+      hx-target="#note-display-area"
       hx-swap="innerHTML"
-      aria-labelledby="edit-heading">
-    <h1 id="edit-heading">Editing: {{.Title}}</h1>
-    
-    <input type="hidden" name="original_title" value="{{.Title}}">
-    
-    <div>
-        <label for="edit-title">Title</label>
-        <input id="edit-title" name="title" value="{{.Title}}" required aria-describedby="edit-title-error">
-        <div id="edit-title-error" role="alert" aria-live="assertive">{{.TitleError}}</div>
-    </div>
-    
-    <div>
-        <label for="edit-notebook-select">Notebook</label>
-        <select id="edit-notebook-select" name="notebook_id" aria-label="Select notebook for this note">
-            <option value="">None</option>
-            {{range .Notebooks}}
-            <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
-            {{end}}
-        </select>
-    </div>
+      aria-labelledby="edit-heading"
+      novalidate>
 
-    <div>
-        <label for="note-content-textarea">Note content in Markdown</label>
-        <span id="markdown-instructions" class="sr-only">Use markdown syntax. Save to preview.</span>
-        <textarea id="note-content-textarea" 
-                  name="content" 
-                  rows="20" 
-                  required 
-                  aria-describedby="markdown-instructions edit-content-error">{{.Raw}}</textarea>
-        <div id="edit-content-error" role="alert" aria-live="assertive">{{.ContentError}}</div>
-    </div>
-    
-    <button type="submit">Save changes</button>
-    <button type="button" 
-            hx-get="/notes" 
-            hx-target="#note-display-area" 
+  <h1 id="edit-heading">Editing: {{.Title}}</h1>
+
+  <input type="hidden" name="original_title" value="{{.Title}}">
+
+  <div class="form-group">
+    <label for="edit-title">Title</label>
+    <input id="edit-title" name="title" type="text"
+           value="{{.Title}}" required
+           aria-describedby="edit-title-error">
+    <div id="edit-title-error" class="form-error"
+         role="alert" aria-live="assertive">{{.TitleError}}</div>
+  </div>
+
+  <div class="form-group">
+    <label for="edit-notebook-select">Notebook</label>
+    <select id="edit-notebook-select" name="notebook_id">
+      <option value="">None</option>
+      {{range .Notebooks}}
+      <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="note-content-textarea">
+      Content <span class="sr-only">(Markdown supported)</span>
+    </label>
+    <span id="markdown-hint" class="sr-only">Use Markdown syntax. Wiki-links use [[Note Title]] notation.</span>
+    <textarea id="note-content-textarea"
+              name="content"
+              rows="20"
+              required
+              aria-describedby="markdown-hint edit-content-error">{{.Raw}}</textarea>
+    <div id="edit-content-error" class="form-error"
+         role="alert" aria-live="assertive">{{.ContentError}}</div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save changes</button>
+    <button type="button"
+            class="btn btn-secondary"
+            hx-get="/notes/view?title={{.Title | urlquery}}"
+            hx-target="#note-display-area"
             hx-swap="innerHTML"
-            aria-label="Cancel editing and return to notes">
-        Cancel
+            aria-label="Cancel editing and return to view">
+      Cancel
     </button>
+  </div>
 </form>
 {{end}}

@@ -1,41 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{.Title}} - notty</title>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{.Title}} — notty</title>
+  {{template "head-assets" .}}
 </head>
 <body>
-    <a href="#main-content" class="sr-only">Skip to main content</a>
-    <div id="system-messages" role="status" aria-live="polite" class="sr-only"></div>
+  {{template "site-header" .}}
+  <div id="system-status" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
-    <header>
-        <nav aria-label="Breadcrumb">
-            <a href="/notes">Back to notes</a>
-        </nav>
-    </header>
+  <main id="main-content" class="page-wrapper">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/notes">← All notes</a>
+    </nav>
 
-    <main id="main-content">
-        <div id="note-display-area">
-            {{template "note_view_fragment" .}}
-        </div>
-    </main>
+    <div id="note-display-area">
+      {{template "note_view_fragment" .}}
+    </div>
+  </main>
 
-    <script>
-        document.body.addEventListener('htmx:afterSwap', function(event) {
-            var textarea = document.getElementById('note-content-textarea');
-            if (textarea) {
-                textarea.focus();
-                document.getElementById('system-messages').innerText = "Editing mode active";
-                return;
-            }
-            var editButton = document.getElementById('edit-button');
-            if (editButton) {
-                editButton.focus();
-                document.getElementById('system-messages').innerText = "View mode active";
-            }
-        });
-    </script>
+  {{template "site-footer" .}}
+
+  <script>
+    /* Refocus after HTMX swaps so keyboard users land in the right place. */
+    document.body.addEventListener('htmx:afterSwap', function (event) {
+      if (event.detail.target.id !== 'note-display-area') return;
+      setTimeout(function () {
+        var statusEl = document.getElementById('system-status');
+        var textarea = document.getElementById('note-content-textarea');
+        if (textarea) {
+          textarea.focus();
+          if (statusEl) statusEl.textContent = 'Editing mode active.';
+          return;
+        }
+        var editBtn = document.getElementById('edit-button');
+        if (editBtn) {
+          editBtn.focus();
+          if (statusEl) statusEl.textContent = 'View mode active.';
+        }
+      }, 100);
+    });
+  </script>
 </body>
 </html>

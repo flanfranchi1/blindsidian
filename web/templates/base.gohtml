@@ -1,28 +1,51 @@
-{{define "base"}}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{.Title}}</title>
-  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
-</head>
-<body>
-  <a class="skip-link" href="#main-content" style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='static';this.style.left='0';this.style.width='auto';">Skip to main content</a>
-  <header>
-    <nav aria-label="Main navigation">
-      <a href="/">Home</a> |
-      <a href="/notes">Notes</a> |
-      <a href="/logout">Logout</a>
+{{/* ── head-assets: shared <link> and <script> for every page ── */}}
+{{define "head-assets"}}
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+{{end}}
+
+{{/* ── site-header: authenticated pages ── */}}
+{{define "site-header"}}
+<header class="site-header">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div class="site-header__inner">
+    <a href="/" class="site-logo" aria-label="Notty — go to home">
+      <img src="/static/logo.svg" alt="" width="32" height="32">
+      <span>notty</span>
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <ul role="list">
+        <li><a href="/notes">Notes</a></li>
+        <li><a href="/logout">Log out</a></li>
+      </ul>
     </nav>
-  </header>
-  <div id="system-status" role="status" aria-live="polite" aria-atomic="true">{{if .Message}}{{.Message}}{{end}}</div>
-  <main id="main-content">
-    {{block "content" .}}{{end}}
-  </main>
-  <footer>
-    <p>notty — accessible notes.</p>
-  </footer>
-</body>
-</html>
+  </div>
+</header>
+{{end}}
+
+{{/* ── site-header-guest: unauthenticated pages (logo only) ── */}}
+{{define "site-header-guest"}}
+<header class="site-header">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div class="site-header__inner">
+    <a href="/" class="site-logo" aria-label="Notty — go to home">
+      <img src="/static/logo.svg" alt="" width="32" height="32">
+      <span>notty</span>
+    </a>
+  </div>
+</header>
+{{end}}
+
+{{/* ── site-footer ── */}}
+{{define "site-footer"}}
+<footer class="site-footer">
+  <p>notty — your notes, plainly.</p>
+</footer>
+{{end}}
+
+{{/* ── status-region: ARIA live region for page-level messages ── */}}
+{{define "status-region"}}
+<div id="system-status" role="status" aria-live="polite" aria-atomic="true" class="sr-only">
+  {{if .Message}}{{.Message}}{{end}}
+</div>
 {{end}}

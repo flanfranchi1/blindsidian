@@ -1,0 +1,388 @@
+/* notty — accessible stylesheet
+   WCAG 2.1 AAA (7:1 contrast) · 8 px grid · CSS Grid + Flexbox
+   ============================================================= */
+
+/* ─── 1. Custom properties ─── */
+:root {
+  /* Color — all text/bg pairs verified ≥ 7:1 contrast */
+  --color-bg:           #fafaf9; /* near-white warm */
+  --color-text:         #0f0f0e; /* near-black warm   — ~18:1 on bg */
+  --color-accent:       #0b4d1d; /* dark green        — ~10:1 on bg */
+  --color-accent-hover: #083d16;
+  --color-accent-fg:    #ffffff; /* white on accent   — ~11:1 */
+  --color-error:        #861616; /* dark red          — ~8.8:1 on bg */
+  --color-surface:      #ececeb; /* panel background */
+  --color-border:       #c2c2c0;
+  --color-muted:        #4a4a48; /* secondary text    — ~7.4:1 on bg */
+  --color-focus-ring:   #0b4d1d;
+
+  /* Spacing — 8 px grid */
+  --sp-1: 0.5rem;   /* 8px  */
+  --sp-2: 1rem;     /* 16px */
+  --sp-3: 1.5rem;   /* 24px */
+  --sp-4: 2rem;     /* 32px */
+  --sp-6: 3rem;     /* 48px */
+  --sp-8: 4rem;     /* 64px */
+
+  /* Type scale — rem so zoom is respected */
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  2rem;
+
+  /* Layout */
+  --max-width: 72rem;
+  --sidebar-w: 18rem;
+  --radius:    0.25rem;
+  --border:    1px;
+}
+
+/* ─── 2. Reset ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 100%;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+img, svg { display: block; max-width: 100%; }
+ul, ol   { list-style: none; }
+button, input, select, textarea { font: inherit; }
+
+/* ─── 3. Links ─── */
+a { color: var(--color-accent); }
+a:hover { color: var(--color-accent-hover); text-decoration-thickness: 2px; }
+
+/* ─── 4. Focus — always visible, never suppressed ─── */
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ─── 5. Skip link ─── */
+.skip-link {
+  position: absolute;
+  inset-block-start: var(--sp-2);
+  inset-inline-start: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-weight: 600;
+  border-radius: var(--radius);
+  text-decoration: none;
+  transform: translateY(-200%);
+  z-index: 9999;
+  transition: transform 0.1s;
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* ─── 6. Screen-reader only ─── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── 7. Site header ─── */
+.site-header {
+  background: var(--color-bg);
+  border-bottom: var(--border) solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.site-header__inner {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding: var(--sp-2) var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.site-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  text-decoration: none;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-logo:hover { color: var(--color-accent); }
+.site-logo img  { width: 2rem; height: 2rem; border-radius: 4px; }
+
+/* ─── 8. Site navigation ─── */
+.site-nav ul {
+  display: flex;
+  gap: var(--sp-1);
+  align-items: center;
+}
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+  padding: var(--sp-1) var(--sp-2);
+  min-height: 2.75rem;
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+.site-nav a:hover { background: var(--color-surface); color: var(--color-accent); }
+
+/* ─── 9. Site footer ─── */
+.site-footer {
+  border-top: var(--border) solid var(--color-border);
+  padding: var(--sp-3) var(--sp-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+/* ─── 10. Page layout ─── */
+.page-wrapper {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding: var(--sp-4);
+  width: 100%;
+}
+
+/* ─── 11. Two-column notes layout ─── */
+.notes-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-areas: "sidebar content";
+  gap: var(--sp-6);
+  align-items: start;
+}
+.notes-sidebar { grid-area: sidebar; }
+.notes-content  { grid-area: content; }
+
+@media (max-width: 52rem) {
+  .notes-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas: "sidebar" "content";
+    gap: var(--sp-4);
+  }
+}
+
+/* ─── 12. Typography ─── */
+h1 { font-size: var(--text-3xl); line-height: 1.15; margin-bottom: var(--sp-3); }
+h2 { font-size: var(--text-2xl); line-height: 1.2;  margin-bottom: var(--sp-2); }
+h3 { font-size: var(--text-xl);  line-height: 1.25; margin-bottom: var(--sp-2); }
+h4 { font-size: var(--text-lg);  line-height: 1.3;  margin-bottom: var(--sp-1); }
+p  { margin-bottom: var(--sp-2); }
+
+/* ─── 13. Form components ─── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: var(--sp-3);
+}
+.form-group label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: var(--sp-1) var(--sp-2);
+  border: var(--border) solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 2.75rem;
+  width: 100%;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--color-accent);
+}
+.form-group textarea {
+  min-height: 12rem;
+  resize: vertical;
+  line-height: 1.6;
+}
+.form-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+.form-error {
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  font-weight: 500;
+  min-height: 1.25em;
+}
+
+/* ─── 14. Buttons ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-1) var(--sp-3);
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border-radius: var(--radius);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  border: var(--border) solid transparent;
+  text-decoration: none;
+  transition: background-color 0.1s, border-color 0.1s;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  border-color: var(--color-accent);
+}
+.btn-primary:hover  { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.btn-secondary {
+  background: transparent;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.btn-secondary:hover { background: var(--color-surface); }
+.btn-danger {
+  background: transparent;
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+.btn-danger:hover { background: #fdf4f4; }
+
+/* ─── 15. Section grouping ─── */
+.section-group { margin-bottom: var(--sp-4); }
+.section-group:last-child { margin-bottom: 0; }
+.divider { border: none; border-top: var(--border) solid var(--color-border); margin: var(--sp-4) 0; }
+
+/* ─── 16. Notebook list (sidebar) ─── */
+.notebook-list li + li { margin-top: 0.25rem; }
+.notebook-list a {
+  display: block;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+.notebook-list a:hover { background: var(--color-surface); color: var(--color-accent); }
+
+/* ─── 17. Notes list ─── */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.note-card {
+  border: var(--border) solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+}
+.note-card__title a {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  text-decoration: none;
+}
+.note-card__title a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.note-card__meta {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  margin-block: var(--sp-1);
+}
+.note-card__actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* ─── 18. Centered auth layout ─── */
+.auth-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - 10rem);
+  padding: var(--sp-4);
+}
+.auth-card {
+  width: 100%;
+  max-width: 28rem;
+}
+.auth-card h1 { margin-bottom: var(--sp-1); }
+.auth-card .lead { color: var(--color-muted); margin-bottom: var(--sp-4); }
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.auth-actions .btn { width: 100%; justify-content: center; }
+.auth-switch { font-size: var(--text-sm); color: var(--color-muted); margin-top: var(--sp-3); }
+
+/* ─── 19. HTMX indicator ─── */
+.htmx-indicator { display: none; font-size: var(--text-sm); color: var(--color-muted); }
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { display: inline; }
+
+/* ─── 20. Search ─── */
+#search-results:empty { display: none; }
+
+/* ─── 21. Breadcrumb ─── */
+.breadcrumb {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  margin-bottom: var(--sp-3);
+}
+.breadcrumb a { color: var(--color-accent); }
+
+/* ─── 22. Note view — rendered markdown body ─── */
+.note-body {
+  line-height: 1.8;
+  margin-block: var(--sp-3) var(--sp-4);
+}
+.note-body p              { margin-bottom: var(--sp-2); }
+.note-body ul,
+.note-body ol             { padding-left: var(--sp-4); list-style: revert; margin-bottom: var(--sp-2); }
+.note-body h1             { font-size: var(--text-2xl); }
+.note-body h2             { font-size: var(--text-xl); }
+.note-body h3             { font-size: var(--text-lg); }
+.note-body code           { font-family: ui-monospace, "Cascadia Code", monospace; background: var(--color-surface); padding: 0.1em 0.35em; border-radius: 2px; font-size: 0.9em; }
+.note-body pre            { background: var(--color-surface); padding: var(--sp-2); border-radius: var(--radius); overflow-x: auto; margin-bottom: var(--sp-2); }
+.note-body pre code       { background: none; padding: 0; }
+.note-body blockquote     { border-left: 3px solid var(--color-border); padding-left: var(--sp-2); color: var(--color-muted); margin-bottom: var(--sp-2); }
+.note-body a              { color: var(--color-accent); }
+.note-body hr             { border: none; border-top: var(--border) solid var(--color-border); margin: var(--sp-4) 0; }
+
+/* ─── 23. Note article action bar ─── */
+.note-article-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: var(--border) solid var(--color-border);
+}
