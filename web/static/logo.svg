@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" role="img" aria-label="Notty — note-graph logo">
+  <!-- N letterform: three nodes connected by two verticals and a 45° diagonal -->
+  <!-- Left vertical: top-left node to bottom-left node -->
+  <line x1="5" y1="5" x2="5" y2="19" stroke="#1a5c2a" stroke-width="2.5" stroke-linecap="square"/>
+  <!-- Diagonal: top-left to bottom-right (45°) -->
+  <line x1="5" y1="5" x2="19" y2="19" stroke="#1a5c2a" stroke-width="2.5" stroke-linecap="square"/>
+  <!-- Right vertical: top-right node to bottom-right node -->
+  <line x1="19" y1="5" x2="19" y2="19" stroke="#1a5c2a" stroke-width="2.5" stroke-linecap="square"/>
+  <!-- Corner nodes -->
+  <rect x="3.75" y="3.75" width="2.5" height="2.5" fill="#1a5c2a"/>
+  <rect x="17.75" y="3.75" width="2.5" height="2.5" fill="#1a5c2a"/>
+  <rect x="3.75" y="17.75" width="2.5" height="2.5" fill="#1a5c2a"/>
+  <rect x="17.75" y="17.75" width="2.5" height="2.5" fill="#1a5c2a"/>
+</svg>

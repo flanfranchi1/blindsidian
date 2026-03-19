@@ -4,21 +4,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>notty - Home</title>
-  <script src="https://unpkg.com/htmx.org@1.11.1"></script>
+  <title>notty — your notes, plainly</title>
+  {{template "head-assets" .}}
 </head>
 <body>
-  <a class="skip-link" href="#main-content" style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='static';this.style.left='0';this.style.width='auto';">Skip to main content</a>
-  <header><h1>notty</h1></header>
+  {{template "site-header-guest" .}}
   <main id="main-content">
-    <section>
-      <h2>Get Started</h2>
-      <ul>
-        <li><a href="/signup">Sign up</a></li>
-        <li><a href="/login">Log in</a></li>
-      </ul>
-    </section>
+    <div class="auth-layout">
+      <div class="auth-card auth-card--hero">
+        <h1>notty</h1>
+        <p class="lead">A minimal, accessible place for your notes.<br>Write in Markdown. Link ideas. Stay focused.</p>
+        <nav aria-label="Account options">
+          <ul class="auth-actions" role="list">
+            <li><a href="/signup" class="btn btn-primary">Create account</a></li>
+            <li><a href="/login" class="btn btn-ghost">Log in</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
   </main>
+  {{template "site-footer" .}}
 </body>
 </html>
 {{end}}

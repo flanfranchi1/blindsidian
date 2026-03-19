@@ -1,26 +1,34 @@
 {{define "note_view_fragment"}}
-<article aria-labelledby="note-title">
-    <h1 id="note-title">{{.Title}}</h1>
-    <div id="note-body">
-        {{.Body}}
-    </div>
-    <button id="edit-button" 
-            hx-get="/notes/view/edit?title={{.Title | urlquery}}" 
-            hx-target="#note-display-area" 
-            hx-swap="innerHTML" 
+<article class="note-article" aria-labelledby="note-title">
+  <h1 id="note-title">{{.Title}}</h1>
+
+  <div class="note-body" id="note-body">
+    {{.Body}}
+  </div>
+
+  <div class="note-article-actions">
+    <button id="edit-button"
+            type="button"
+            class="btn btn-secondary"
+            hx-get="/notes/view/edit?title={{.Title | urlquery}}"
+            hx-target="#note-display-area"
+            hx-swap="innerHTML"
             accesskey="e"
-            aria-controls="note-display-area">
-        Edit Note
+            aria-controls="note-display-area"
+            aria-label="Edit this note (Alt+E)">
+      Edit
     </button>
-    {{if .Backlinks}}
-    <section aria-labelledby="backlinks-heading">
-        <h3 id="backlinks-heading">Backlinks</h3>
-        <ul>
-        {{range .Backlinks}}
-            <li><a href="/notes/{{.ID}}">{{.Title}}</a></li>
-        {{end}}
-        </ul>
-    </section>
-    {{end}}
+  </div>
+
+  {{if .Backlinks}}
+  <aside class="note-backlinks" aria-labelledby="backlinks-heading">
+    <h2 id="backlinks-heading">Linked from</h2>
+    <ul role="list">
+      {{range .Backlinks}}
+      <li><a href="/notes/{{.ID}}">{{.Title}}</a></li>
+      {{end}}
+    </ul>
+  </aside>
+  {{end}}
 </article>
 {{end}}

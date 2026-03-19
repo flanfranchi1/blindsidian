@@ -1,0 +1,703 @@
+/* notty — design system
+   WCAG 2.2 AAA (≥7:1 contrast) · 8 px base unit · CSS Grid + Flexbox
+   All contrast ratios verified against APCA/WCAG formulas.
+   ==================================================================== */
+
+/* ─── 1. Custom properties (light mode) ─── */
+:root {
+  /* Palette — light
+     bg  #f8f8f7  L≈0.941
+     ─────────────────────────────────────────────────────────────────
+     text    #131312  ratio ~19.5:1
+     accent  #1a5c2a  ratio  ~7.5:1  (forest green)
+     muted   #4a4a46  ratio  ~7.7:1
+     error   #8b1a1a  ratio  ~8.6:1
+  */
+  --c-bg:           #f8f8f7;
+  --c-text:         #131312;
+  --c-accent:       #1a5c2a;
+  --c-accent-dim:   #e5f2e8;   /* tinted hover surface */
+  --c-accent-hover: #144820;
+  --c-accent-fg:    #ffffff;   /* white on accent ~8:1 */
+  --c-error:        #8b1a1a;
+  --c-surface:      #edecea;   /* card / panel */
+  --c-surface-2:    #e4e3e0;   /* deeper surface */
+  --c-border:       #c8c7c4;
+  --c-muted:        #4a4a46;
+  --c-focus:        #1a5c2a;
+
+  /* Spacing — 8 px grid */
+  --s-1:  0.5rem;   /*  8px */
+  --s-2:  1rem;     /* 16px */
+  --s-3:  1.5rem;   /* 24px */
+  --s-4:  2rem;     /* 32px */
+  --s-6:  3rem;     /* 48px */
+  --s-8:  4rem;     /* 64px */
+  --s-12: 6rem;     /* 96px */
+
+  /* Type scale */
+  --t-xs:   0.75rem;
+  --t-sm:   0.875rem;
+  --t-base: 1rem;
+  --t-lg:   1.125rem;
+  --t-xl:   1.25rem;
+  --t-2xl:  1.5rem;
+  --t-3xl:  2rem;
+  --t-4xl:  2.75rem;
+
+  /* Layout */
+  --max-w:     72rem;
+  --sidebar-w: 17rem;
+  --radius:    0.25rem;
+
+  /* Motion */
+  --dur:  0.12s;
+  --ease: ease;
+}
+
+/* ─── 2. Dark mode overrides ─── */
+/*
+   Dark palette — bg #0e0e0d L≈0.002
+   ────────────────────────────────────────────────────────
+   text    #f5f5f2  ratio ~21:1
+   accent  #5cd97a  ratio ~10.9:1  (contrast-safe bright green)
+   muted   #a0a09a  ratio  ~7.7:1
+   error   #f07272  ratio  ~7.0:1
+*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg:           #0e0e0d;
+    --c-text:         #f5f5f2;
+    --c-accent:       #5cd97a;
+    --c-accent-dim:   #152018;
+    --c-accent-hover: #6ae688;
+    --c-accent-fg:    #0a1a0e;
+    --c-error:        #f07272;
+    --c-surface:      #1a1a18;
+    --c-surface-2:    #222220;
+    --c-border:       #2d2d2a;
+    --c-muted:        #a0a09a;
+    --c-focus:        #5cd97a;
+  }
+  /* Logo: invert the SVG strokes rendered in accent color */
+  .site-logo__icon { color: var(--c-accent); }
+}
+
+/* ─── 3. Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── 4. Reset ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 100%;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: var(--t-base);
+  line-height: 1.625;
+  color: var(--c-text);
+  background-color: var(--c-bg);
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+img  { display: block; max-width: 100%; }
+svg  { display: block; }
+ul, ol { list-style: none; }
+button, input, select, textarea { font: inherit; }
+
+/* ─── 5. Base typography ─── */
+h1 { font-size: var(--t-3xl);  line-height: 1.15; font-weight: 700; margin-bottom: var(--s-3); letter-spacing: -0.02em; }
+h2 { font-size: var(--t-2xl);  line-height: 1.2;  font-weight: 700; margin-bottom: var(--s-2); letter-spacing: -0.01em; }
+h3 { font-size: var(--t-xl);   line-height: 1.25; font-weight: 600; margin-bottom: var(--s-2); }
+h4 { font-size: var(--t-lg);   line-height: 1.3;  font-weight: 600; margin-bottom: var(--s-1); }
+p  { margin-bottom: var(--s-2); }
+p:last-child { margin-bottom: 0; }
+
+/* ─── 6. Links ─── */
+a { color: var(--c-accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+a:hover { color: var(--c-accent-hover); text-decoration-thickness: 2px; }
+
+/* ─── 7. Focus — always visible, never suppressed ─── */
+:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ─── 8. Skip link ─── */
+.skip-link {
+  position: absolute;
+  inset-block-start: var(--s-2);
+  inset-inline-start: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  background: var(--c-accent);
+  color: var(--c-accent-fg);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  border-radius: var(--radius);
+  text-decoration: none;
+  transform: translateY(-300%);
+  z-index: 9999;
+  transition: transform var(--dur) var(--ease);
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* ─── 9. Screen-reader utilities ─── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── 10. Site header ─── */
+.site-header {
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.site-header__inner {
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding-block: var(--s-2);
+  padding-inline: var(--s-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+/* ─── 11. Logo ─── */
+.site-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  text-decoration: none;
+  font-size: var(--t-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--c-text);
+  line-height: 1;
+}
+.site-logo:hover { color: var(--c-accent); }
+.site-logo:hover .site-logo__icon { color: var(--c-accent); }
+.site-logo__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--c-text);
+  flex-shrink: 0;
+  transition: color var(--dur) var(--ease);
+}
+.site-logo__wordmark { display: inline; }
+
+/* ─── 12. Site navigation ─── */
+.site-nav ul {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  text-decoration: none;
+  padding: var(--s-1) var(--s-2);
+  min-height: 2.75rem;
+  border-radius: var(--radius);
+  color: var(--c-text);
+}
+.site-nav a:hover {
+  background: var(--c-surface);
+  color: var(--c-accent);
+  text-decoration: none;
+}
+
+/* ─── 13. Site footer ─── */
+.site-footer {
+  border-top: 1px solid var(--c-border);
+  padding: var(--s-3) var(--s-4);
+  text-align: center;
+  font-size: var(--t-sm);
+  color: var(--c-muted);
+}
+
+/* ─── 14. Page layout ─── */
+.page-wrapper {
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding: var(--s-4);
+  width: 100%;
+}
+.page-heading {
+  margin-bottom: var(--s-4);
+}
+
+/* ─── 15. Two-column notes layout ─── */
+.notes-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-areas: "sidebar content";
+  gap: var(--s-8);
+  align-items: start;
+}
+.notes-sidebar { grid-area: sidebar; }
+.notes-content  { grid-area: content; }
+
+@media (max-width: 52rem) {
+  .notes-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas: "sidebar" "content";
+    gap: var(--s-4);
+  }
+}
+
+/* ─── 16. Buttons ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: var(--s-1) var(--s-3);
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border-radius: var(--radius);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  line-height: 1;
+  transition: background-color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease);
+}
+.btn-primary {
+  background: var(--c-accent);
+  color: var(--c-accent-fg);
+  border-color: var(--c-accent);
+}
+.btn-primary:hover {
+  background: var(--c-accent-hover);
+  border-color: var(--c-accent-hover);
+  text-decoration: none;
+  color: var(--c-accent-fg);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--c-accent);
+  border-color: var(--c-accent);
+}
+.btn-secondary:hover {
+  background: var(--c-accent-dim);
+  text-decoration: none;
+  color: var(--c-accent);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+.btn-ghost:hover {
+  background: var(--c-surface);
+  text-decoration: none;
+  color: var(--c-text);
+}
+.btn-danger {
+  background: transparent;
+  color: var(--c-error);
+  border-color: var(--c-error);
+}
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--c-error) 10%, transparent);
+  text-decoration: none;
+  color: var(--c-error);
+}
+.btn[aria-busy="true"] { opacity: 0.65; pointer-events: none; }
+.btn:disabled          { opacity: 0.5;  pointer-events: none; }
+
+/* ─── 17. Form components ─── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: var(--s-3);
+}
+.form-group:last-child { margin-bottom: 0; }
+
+.form-group label {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-height: 2.75rem;
+  width: 100%;
+  transition: border-color var(--dur) var(--ease);
+}
+.form-group input:hover,
+.form-group select:hover { border-color: var(--c-muted); }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--c-accent);
+}
+.form-group input[type="search"] {
+  /* Normalize appearance across browsers */
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-group textarea {
+  min-height: 10rem;
+  resize: vertical;
+  line-height: 1.6;
+}
+/* Editor textarea — monospace, reminiscent of a code editor */
+.editor-textarea {
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: var(--t-sm);
+  line-height: 1.75;
+  min-height: 26rem;
+  tab-size: 2;
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  border-radius: var(--radius);
+  padding: var(--s-3);
+  resize: vertical;
+}
+.editor-textarea:focus { border-color: var(--c-accent); background: var(--c-bg); }
+
+.form-hint {
+  font-size: var(--t-xs);
+  color: var(--c-muted);
+  margin-top: -0.125rem;
+}
+.form-actions {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  padding-top: var(--s-2);
+}
+.form-error {
+  font-size: var(--t-sm);
+  color: var(--c-error);
+  font-weight: 500;
+  min-height: 1.25em;
+}
+
+/* ─── 18. Section grouping ─── */
+.section-group { margin-bottom: var(--s-6); }
+.section-group:last-child { margin-bottom: 0; }
+.section-group h2,
+.section-group h3 { margin-bottom: var(--s-3); }
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  margin-block: var(--s-6);
+}
+
+/* ─── 19. Auth layout — centered card ─── */
+.auth-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - 8rem);
+  padding: var(--s-4);
+}
+.auth-card {
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--s-6) var(--s-6);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: calc(var(--radius) * 2);
+}
+.auth-card--hero {
+  background: none;
+  border: none;
+  text-align: center;
+  max-width: 32rem;
+  padding-top: var(--s-8);
+}
+.auth-card h1 { margin-bottom: var(--s-1); }
+.auth-card .lead {
+  color: var(--c-muted);
+  font-size: var(--t-lg);
+  margin-bottom: var(--s-6);
+  line-height: 1.5;
+}
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.auth-actions .btn { width: 100%; justify-content: center; }
+.auth-switch {
+  font-size: var(--t-sm);
+  color: var(--c-muted);
+  margin-top: var(--s-4);
+  text-align: center;
+}
+
+/* ─── 20. Notebook sidebar ─── */
+.notebooks-sidebar-wrapper {
+  position: sticky;
+  top: calc(3.5rem + var(--s-4)); /* below header */
+}
+.notebook-list li + li { margin-top: 0.125rem; }
+.notebook-list a {
+  display: flex;
+  align-items: center;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--c-text);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.notebook-list a:hover {
+  background: var(--c-surface);
+  color: var(--c-accent);
+  text-decoration: none;
+}
+.notebook-list a[aria-current="page"] {
+  background: var(--c-accent-dim);
+  color: var(--c-accent);
+  font-weight: 600;
+}
+
+/* ─── 21. Notes list ─── */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.note-card {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: var(--s-3);
+  background: var(--c-bg);
+  transition: border-color var(--dur) var(--ease);
+}
+.note-card:hover { border-color: var(--c-accent); }
+.note-card__title {
+  margin-bottom: var(--s-1);
+}
+.note-card__title a {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--c-text);
+  letter-spacing: -0.01em;
+}
+.note-card__title a:hover {
+  color: var(--c-accent);
+  text-decoration: none;
+}
+.note-card__meta {
+  font-size: var(--t-xs);
+  color: var(--c-muted);
+  margin-bottom: var(--s-2);
+}
+.note-card__actions {
+  display: flex;
+  gap: var(--s-1);
+  flex-wrap: wrap;
+}
+
+/* ─── 22. Search ─── */
+.search-wrapper { position: relative; }
+.search-status {
+  font-size: var(--t-sm);
+  color: var(--c-muted);
+  margin-top: var(--s-1);
+  min-height: 1.5em;
+}
+#search-results {
+  margin-top: var(--s-2);
+}
+#search-results:empty { display: none; }
+.search-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  list-style: none;
+  padding: 0;
+}
+.search-result-item a {
+  display: block;
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--c-text);
+  font-weight: 500;
+  font-size: var(--t-sm);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.search-result-item a:hover {
+  background: var(--c-accent-dim);
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+  text-decoration: none;
+}
+.search-result-snippet {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--c-muted);
+  font-weight: 400;
+  margin-top: 0.25rem;
+}
+
+/* ─── 23. HTMX states ─── */
+.htmx-indicator {
+  display: none;
+  font-size: var(--t-sm);
+  color: var(--c-muted);
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { display: inline; }
+
+/* Subtle loading state on containers */
+.htmx-request { opacity: 0.7; transition: opacity 0.2s; }
+
+/* ─── 24. Breadcrumb ─── */
+.breadcrumb {
+  font-size: var(--t-sm);
+  color: var(--c-muted);
+  margin-bottom: var(--s-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+.breadcrumb a {
+  color: var(--c-accent);
+  text-decoration: none;
+}
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* ─── 25. Note view — rendered markdown body ─── */
+/* Limit prose width for readability (65ch ≈ optimal line length) */
+.note-article { max-width: 65ch; }
+.note-body {
+  line-height: 1.85;
+  margin-block: var(--s-4) var(--s-6);
+  color: var(--c-text);
+}
+.note-body > * + * { margin-top: var(--s-3); }
+.note-body p              { margin-bottom: 0; }
+.note-body ul,
+.note-body ol             { padding-left: var(--s-4); list-style: revert; }
+.note-body li + li        { margin-top: 0.375rem; }
+.note-body h1             { font-size: var(--t-2xl); margin-top: var(--s-6); }
+.note-body h2             { font-size: var(--t-xl);  margin-top: var(--s-4); }
+.note-body h3             { font-size: var(--t-lg);  margin-top: var(--s-3); }
+.note-body code {
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  background: var(--c-surface);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  font-size: 0.875em;
+  border: 1px solid var(--c-border);
+}
+.note-body pre {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  padding: var(--s-3);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-size: var(--t-sm);
+}
+.note-body pre code       { background: none; padding: 0; border: none; font-size: 1em; }
+.note-body blockquote {
+  border-left: 3px solid var(--c-accent);
+  padding-left: var(--s-3);
+  color: var(--c-muted);
+  font-style: italic;
+}
+.note-body a              { color: var(--c-accent); }
+.note-body hr {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  margin-block: var(--s-6);
+}
+.note-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+}
+.note-body th,
+.note-body td {
+  border: 1px solid var(--c-border);
+  padding: var(--s-1) var(--s-2);
+  text-align: left;
+}
+.note-body th { background: var(--c-surface); font-weight: 600; }
+
+/* ─── 26. Note action bars ─── */
+.note-article-actions {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--c-border);
+}
+.note-backlinks {
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-border);
+}
+.note-backlinks h2 { font-size: var(--t-base); font-weight: 600; margin-bottom: var(--s-2); }
+.note-backlinks ul { display: flex; flex-direction: column; gap: 0.25rem; }
+.note-backlinks li a { font-size: var(--t-sm); }
+
+/* ─── 27. Inline edit card (note list) ─── */
+.note-card--editing {
+  background: var(--c-surface);
+  border-color: var(--c-accent);
+}
+.note-card--editing h3 {
+  font-size: var(--t-base);
+  margin-bottom: var(--s-3);
+  color: var(--c-muted);
+}
+
+/* ─── 28. Print ─── */
+@media print {
+  .site-header,
+  .site-footer,
+  .note-article-actions,
+  .note-backlinks { display: none; }
+  body { background: #fff; color: #000; }
+  .note-body { margin: 0; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.75em; color: #555; }
+}

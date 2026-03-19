@@ -62,6 +62,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		server.RenderTemplate(w, "home.gohtml", nil)
 	})
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
 	http.HandleFunc("/signup", server.SignupHandler)
 	http.HandleFunc("/login", server.LoginHandler)
 	http.HandleFunc("/notes", server.NotesHandler)

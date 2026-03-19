@@ -1,20 +1,24 @@
 {{define "note_item_edit_fragment"}}
 <li id="note-item-{{.ID}}">
-  <article>
-    <h3>Editing: {{.Title}}</h3>
-    <form hx-post="/notes/{{.ID}}/update" hx-target="#note-item-{{.ID}}" hx-swap="outerHTML">
+  <article class="note-card note-card--editing" aria-labelledby="edit-item-heading-{{.ID}}">
+    <h3 id="edit-item-heading-{{.ID}}">Editing: {{.Title}}</h3>
+    <form hx-post="/notes/{{.ID}}/update"
+          hx-target="#note-item-{{.ID}}"
+          hx-swap="outerHTML"
+          novalidate>
+
       <input type="hidden" name="original_id" value="{{.ID}}">
-      <div>
+
+      <div class="form-group">
         <label for="edit-title-{{.ID}}">Title</label>
-        <input id="edit-title-{{.ID}}" name="title" value="{{.Title}}" required aria-describedby="edit-title-error-{{.ID}}">
-        <div id="edit-title-error-{{.ID}}" role="alert" aria-live="assertive">{{.TitleError}}</div>
+        <input id="edit-title-{{.ID}}" name="title" type="text"
+               value="{{.Title}}" required
+               aria-describedby="edit-title-error-{{.ID}}">
+        <div id="edit-title-error-{{.ID}}" class="form-error"
+             role="alert" aria-live="assertive">{{.TitleError}}</div>
       </div>
-      <div>
-        <label for="edit-content-{{.ID}}">Note content in Markdown</label>
-        <textarea id="edit-content-{{.ID}}" name="content" rows="5" required aria-describedby="edit-content-error-{{.ID}}">{{.Content}}</textarea>
-        <div id="edit-content-error-{{.ID}}" role="alert" aria-live="assertive">{{.ContentError}}</div>
-      </div>
-      <div>
+
+      <div class="form-group">
         <label for="edit-notebook-{{.ID}}">Notebook</label>
         <select id="edit-notebook-{{.ID}}" name="notebook_id">
           <option value="">None</option>
@@ -23,8 +27,23 @@
           {{end}}
         </select>
       </div>
-      <button type="submit">Save</button>
-      <button type="button" hx-get="/notes" hx-target="body" hx-swap="outerHTML">Cancel</button>
+
+      <div class="form-group">
+        <label for="edit-content-{{.ID}}">
+          Content <span class="sr-only">(Markdown supported)</span>
+        </label>
+        <textarea id="edit-content-{{.ID}}" name="content" rows="10" required
+                  class="editor-textarea"
+                  aria-describedby="edit-content-error-{{.ID}}">{{.Content}}</textarea>
+        <div id="edit-content-error-{{.ID}}" class="form-error"
+             role="alert" aria-live="assertive">{{.ContentError}}</div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="/notes" class="btn btn-ghost"
+           aria-label="Cancel editing &#8220;{{.Title}}&#8221;">Cancel</a>
+      </div>
     </form>
   </article>
 </li>
