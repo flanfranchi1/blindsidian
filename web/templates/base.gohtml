@@ -1,7 +1,29 @@
 {{/* ── head-assets: shared <link> and <script> for every page ── */}}
 {{define "head-assets"}}
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f8f7">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e0e0d">
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+{{end}}
+
+{{/*
+  ── logo-icon: inline SVG — uses currentColor so it adapts to light/dark mode.
+     Geometric N: four corner nodes connected by two verticals and a 45° diagonal.
+*/}}
+{{define "logo-icon"}}
+<svg class="site-logo__icon" viewBox="0 0 24 24" fill="none"
+     aria-hidden="true" focusable="false">
+  <line x1="5" y1="5" x2="5" y2="19"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="square"/>
+  <line x1="5" y1="5" x2="19" y2="19"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="square"/>
+  <line x1="19" y1="5" x2="19" y2="19"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="square"/>
+  <rect x="3.75" y="3.75" width="2.5" height="2.5" fill="currentColor"/>
+  <rect x="17.75" y="3.75" width="2.5" height="2.5" fill="currentColor"/>
+  <rect x="3.75" y="17.75" width="2.5" height="2.5" fill="currentColor"/>
+  <rect x="17.75" y="17.75" width="2.5" height="2.5" fill="currentColor"/>
+</svg>
 {{end}}
 
 {{/* ── site-header: authenticated pages ── */}}
@@ -10,8 +32,8 @@
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <div class="site-header__inner">
     <a href="/" class="site-logo" aria-label="Notty — go to home">
-      <img src="/static/logo.svg" alt="" width="32" height="32">
-      <span>notty</span>
+      {{template "logo-icon" .}}
+      <span class="site-logo__wordmark">notty</span>
     </a>
     <nav class="site-nav" aria-label="Main navigation">
       <ul role="list">
@@ -23,14 +45,14 @@
 </header>
 {{end}}
 
-{{/* ── site-header-guest: unauthenticated pages (logo only) ── */}}
+{{/* ── site-header-guest: unauthenticated pages ── */}}
 {{define "site-header-guest"}}
 <header class="site-header">
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <div class="site-header__inner">
     <a href="/" class="site-logo" aria-label="Notty — go to home">
-      <img src="/static/logo.svg" alt="" width="32" height="32">
-      <span>notty</span>
+      {{template "logo-icon" .}}
+      <span class="site-logo__wordmark">notty</span>
     </a>
   </div>
 </header>

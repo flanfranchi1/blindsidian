@@ -13,6 +13,8 @@
   <main id="main-content" class="page-wrapper">
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="/notes">← All notes</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{{.Title}}</span>
     </nav>
 
     <div id="note-display-area">
@@ -24,10 +26,10 @@
 
   <script>
     /* Refocus after HTMX swaps so keyboard users land in the right place. */
-    document.body.addEventListener('htmx:afterSwap', function (event) {
-      if (event.detail.target.id !== 'note-display-area') return;
+    document.body.addEventListener('htmx:afterSwap', function (ev) {
+      if (ev.detail.target.id !== 'note-display-area') return;
+      var statusEl = document.getElementById('system-status');
       setTimeout(function () {
-        var statusEl = document.getElementById('system-status');
         var textarea = document.getElementById('note-content-textarea');
         if (textarea) {
           textarea.focus();
@@ -39,7 +41,7 @@
           editBtn.focus();
           if (statusEl) statusEl.textContent = 'View mode active.';
         }
-      }, 100);
+      }, 80);
     });
   </script>
 </body>

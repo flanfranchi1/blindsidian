@@ -5,22 +5,26 @@
       <a href="/notes/view?title={{urlquery .Title}}">{{.Title}}</a>
     </h3>
     <p class="note-card__meta">
-      <time>Last updated: {{.UpdatedAt}}</time>
+      <time datetime="{{.UpdatedAt}}">Updated {{.UpdatedAt}}</time>
     </p>
     <div class="note-card__actions">
       <button type="button"
-              class="btn btn-secondary"
+              class="btn btn-ghost"
               hx-get="/notes/{{.ID}}/edit"
               hx-target="#note-item-{{.ID}}"
               hx-swap="outerHTML"
-              aria-label="Edit &#8220;{{.Title}}&#8221;">Edit</button>
+              aria-label="Edit &#8220;{{.Title}}&#8221;">
+        Edit
+      </button>
       <button type="button"
               class="btn btn-danger"
               hx-post="/notes/{{.ID}}/delete"
               hx-confirm="Delete &#8220;{{.Title}}&#8221;? This cannot be undone."
               hx-target="#note-item-{{.ID}}"
-              hx-swap="outerHTML swap:0.3s"
-              aria-label="Delete &#8220;{{.Title}}&#8221;">Delete</button>
+              hx-swap="outerHTML swap:0.2s"
+              aria-label="Delete &#8220;{{.Title}}&#8221;">
+        Delete
+      </button>
     </div>
   </article>
 </li>

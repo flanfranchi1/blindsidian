@@ -35,9 +35,11 @@
     <span id="markdown-hint" class="sr-only">Use Markdown syntax. Wiki-links use [[Note Title]] notation.</span>
     <textarea id="note-content-textarea"
               name="content"
-              rows="20"
+              rows="24"
               required
+              class="editor-textarea"
               aria-describedby="markdown-hint edit-content-error">{{.Raw}}</textarea>
+    <span class="form-hint" aria-hidden="true">Markdown · link notes with [[Title]]</span>
     <div id="edit-content-error" class="form-error"
          role="alert" aria-live="assertive">{{.ContentError}}</div>
   </div>
@@ -45,7 +47,7 @@
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Save changes</button>
     <button type="button"
-            class="btn btn-secondary"
+            class="btn btn-ghost"
             hx-get="/notes/view?title={{.Title | urlquery}}"
             hx-target="#note-display-area"
             hx-swap="innerHTML"

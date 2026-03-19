@@ -17,41 +17,89 @@
 
     <div class="notes-layout">
 
-      <!-- ── Sidebar: notebooks ── -->
+      <!-- ── Sidebar: notebooks + new notebook ── -->
       <aside class="notes-sidebar" aria-labelledby="notebooks-heading">
-        <section class="section-group">
-          <h2 id="notebooks-heading">Notebooks</h2>
-          {{if .Notebooks}}
-          <nav aria-label="Notebook list">
-            <ul class="notebook-list" role="list">
-              {{range .Notebooks}}
-              <li><a href="/notebooks/{{.ID}}">{{.Name}}</a></li>
-              {{end}}
-            </ul>
-          </nav>
-          {{end}}
+        <div class="notebooks-sidebar-wrapper">
+          <section class="section-group">
+            <h2 id="notebooks-heading">Notebooks</h2>
+            {{if .Notebooks}}
+            <nav aria-label="Notebook list">
+              <ul class="notebook-list" role="list">
+                <li>
+                  <a href="/notes"
+                     {{if not .Notebook}}aria-current="page"{{end}}>
+                    All notes
+                  </a>
+                </li>
+                {{range .Notebooks}}
+                <li>
+                  <a href="/notebooks/{{.ID}}"
+                     {{if and $.Notebook (eq $.Notebook.ID .ID)}}aria-current="page"{{end}}>
+                    {{.Name}}
+                  </a>
+                </li>
+                {{end}}
+              </ul>
+            </nav>
+            {{end}}
 
-          <hr class="divider">
+            <hr class="divider" style="margin-block:var(--s-4)">
 
-          <section aria-labelledby="new-notebook-heading">
-            <h3 id="new-notebook-heading">New notebook</h3>
-            <form method="post" action="/notebooks/create" novalidate>
-              <div class="form-group">
-                <label for="notebook-name">Notebook name</label>
-                <input id="notebook-name" name="name" type="text" required
-                       autocomplete="off"
-                       aria-describedby="notebook-name-error">
-                <div id="notebook-name-error" class="form-error"
-                     role="alert" aria-live="assertive">{{.NotebookNameError}}</div>
-              </div>
-              <button type="submit" class="btn btn-secondary">Create</button>
-            </form>
+            <section aria-labelledby="new-notebook-heading">
+              <h3 id="new-notebook-heading">New notebook</h3>
+              <form method="post" action="/notebooks/create" novalidate>
+                <div class="form-group">
+                  <label for="notebook-name" class="sr-only">Notebook name</label>
+                  <input id="notebook-name" name="name" type="text" required
+                         placeholder="Notebook name"
+                         autocomplete="off"
+                         aria-describedby="notebook-name-error">
+                  <div id="notebook-name-error" class="form-error"
+                       role="alert" aria-live="assertive">{{.NotebookNameError}}</div>
+                </div>
+                <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center">
+                  Create notebook
+                </button>
+              </form>
+            </section>
           </section>
-        </section>
+        </div>
       </aside>
 
-      <!-- ── Main content: create · search · list ── -->
+      <!-- ── Main content: search · create · list ── -->
       <div class="notes-content">
+
+        <!-- Search (topmost: most frequently used action) -->
+        <section class="section-group" aria-labelledby="search-heading">
+          <h2 id="search-heading">Search</h2>
+          <div role="search">
+            <div class="form-group">
+              <label for="global-search">Search notes</label>
+              <input id="global-search"
+                     type="search"
+                     name="q"
+                     autocomplete="off"
+                     spellcheck="false"
+                     hx-get="/search"
+                     hx-trigger="keyup changed delay:400ms, search"
+                     hx-target="#search-results"
+                     hx-indicator="#search-indicator"
+                     aria-controls="search-results"
+                     aria-describedby="search-hint">
+              <span id="search-hint" class="sr-only">Results update automatically as you type.</span>
+            </div>
+            <p class="search-status">
+              <span id="search-indicator" class="htmx-indicator" aria-hidden="true">Searching…</span>
+            </p>
+          </div>
+          <div id="search-results"
+               role="region"
+               aria-label="Search results"
+               aria-live="polite"
+               aria-atomic="true"></div>
+        </section>
+
+        <hr class="divider">
 
         <!-- Create note -->
         <section class="section-group" aria-labelledby="create-note-heading">
@@ -76,10 +124,14 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="content">Content <span class="sr-only">(Markdown supported)</span></label>
-              <textarea id="content" name="content" rows="6" required
+              <label for="content">
+                Content
+                <span class="sr-only">(Markdown supported)</span>
+              </label>
+              <textarea id="content" name="content" rows="8" required
+                        class="editor-textarea"
                         aria-describedby="content-error content-hint">{{.Content}}</textarea>
-              <div id="content-hint" class="sr-only">Markdown is supported. Wiki-links use [[Note Title]] syntax.</div>
+              <span id="content-hint" class="form-hint">Markdown supported · link notes with [[Title]]</span>
               <div id="content-error" class="form-error"
                    role="alert" aria-live="assertive">{{.ContentError}}</div>
             </div>
@@ -87,35 +139,6 @@
               <button type="submit" class="btn btn-primary">Save note</button>
             </div>
           </form>
-        </section>
-
-        <hr class="divider">
-
-        <!-- Search -->
-        <section class="section-group" aria-labelledby="search-heading">
-          <h2 id="search-heading">Search</h2>
-          <div role="search">
-            <div class="form-group">
-              <label for="global-search">Search all notes</label>
-              <input id="global-search"
-                     type="search"
-                     name="q"
-                     autocomplete="off"
-                     hx-get="/search"
-                     hx-trigger="keyup changed delay:500ms, search"
-                     hx-target="#search-results"
-                     hx-indicator="#search-indicator"
-                     aria-controls="search-results"
-                     aria-describedby="search-hint">
-              <span id="search-hint" class="sr-only">Results appear below as you type.</span>
-            </div>
-            <span id="search-indicator" class="htmx-indicator" aria-hidden="true">Searching…</span>
-          </div>
-          <div id="search-results"
-               role="region"
-               aria-label="Search results"
-               aria-live="polite"
-               aria-atomic="true"></div>
         </section>
 
         <hr class="divider">
@@ -141,22 +164,27 @@
   {{template "site-footer" .}}
 
   <script>
-    /* After an HTMX swap, move focus to the first interactive element
-       inside the swapped region and announce the state change. */
-    document.body.addEventListener('htmx:afterSwap', function (event) {
+    /* After an HTMX swap: move focus to a meaningful element and
+       announce the state change via the ARIA live region. */
+    document.body.addEventListener('htmx:afterSwap', function (ev) {
+      var statusEl = document.getElementById('system-status');
       setTimeout(function () {
-        var statusEl = document.getElementById('system-status');
-        var textarea = event.detail.target.querySelector('textarea');
+        var textarea = ev.detail.target.querySelector('textarea');
         if (textarea) {
           textarea.focus();
           if (statusEl) statusEl.textContent = 'Edit mode active.';
-        } else {
-          var heading = event.detail.target.querySelector('h3');
-          if (heading) heading.setAttribute('tabindex', '-1'), heading.focus();
-          if (statusEl) statusEl.textContent = 'Note list updated.';
+          return;
         }
-      }, 100);
+        var heading = ev.detail.target.querySelector('h3, h2');
+        if (heading) {
+          heading.setAttribute('tabindex', '-1');
+          heading.focus();
+        }
+        if (statusEl) statusEl.textContent = 'Note list updated.';
+      }, 80);
     });
   </script>
+</body>
+</html>
 </body>
 </html>
