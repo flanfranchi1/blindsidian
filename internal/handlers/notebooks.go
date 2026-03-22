@@ -14,12 +14,12 @@ import (
 func (s *Server) CreateNotebookHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := s.currentUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, s.t(r, "error.unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -32,7 +32,7 @@ func (s *Server) CreateNotebookHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("CreateNotebookHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -40,7 +40,7 @@ func (s *Server) CreateNotebookHandler(w http.ResponseWriter, r *http.Request) {
 	notebook := database.Notebook{ID: uuid.NewString(), Name: name}
 	if err := s.DBManager.CreateNotebook(db, notebook); err != nil {
 		log.Printf("CreateNotebookHandler: CreateNotebook: %v", err)
-		http.Error(w, "unable to create notebook", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 	indexContent := "## Index\n\nWelcome to your new notebook. Use headings to create chapters.\n\n### Chapter 1\n[[Write your first note here]]\n\n#index"
@@ -54,7 +54,7 @@ func (s *Server) CreateNotebookHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.DBManager.CreateNote(db, indexNote); err != nil {
 		log.Printf("CreateNotebookHandler: CreateNote (index): %v", err)
-		http.Error(w, "unable to create index note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/notes?msg=Notebook+created", http.StatusSeeOther)
@@ -73,7 +73,7 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("NotebookViewHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -81,18 +81,18 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 	notebook, err := s.DBManager.GetNotebookByID(db, notebookID)
 	if err != nil {
 		log.Printf("NotebookViewHandler: GetNotebookByID: %v", err)
-		http.Error(w, "notebook not found", http.StatusNotFound)
+		http.Error(w, s.t(r, "error.notebook_not_found"), http.StatusNotFound)
 		return
 	}
 	if notebook == nil {
-		http.Error(w, "notebook not found", http.StatusNotFound)
+		http.Error(w, s.t(r, "error.notebook_not_found"), http.StatusNotFound)
 		return
 	}
 
 	notes, err := s.DBManager.GetNotesByNotebookID(db, notebookID)
 	if err != nil {
 		log.Printf("NotebookViewHandler: GetNotesByNotebookID: %v", err)
-		http.Error(w, "unable to get notes", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 
@@ -121,7 +121,7 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteExists)
 		if err != nil {
 			log.Printf("NotebookViewHandler: RenderMarkdownWithWikiLinks: %v", err)
-			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 		rendered = append(rendered, RenderNote{
@@ -139,5 +139,5 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 		notebooks = []database.Notebook{}
 	}
 
-	s.RenderTemplate(w, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Notebooks": notebooks, "Notebook": notebook})
+	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Notebooks": notebooks, "Notebook": notebook})
 }

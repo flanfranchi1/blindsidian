@@ -1,7 +1,7 @@
 {{define "note_item_edit_fragment"}}
 <li id="note-item-{{.ID}}">
   <article class="note-card note-card--editing" aria-labelledby="edit-item-heading-{{.ID}}">
-    <h3 id="edit-item-heading-{{.ID}}">Editing: {{.Title}}</h3>
+    <h3 id="edit-item-heading-{{.ID}}">{{index .T "note.editing_prefix"}} {{.Title}}</h3>
     <form hx-post="/notes/{{.ID}}/update"
           hx-target="#note-item-{{.ID}}"
           hx-swap="outerHTML"
@@ -10,7 +10,7 @@
       <input type="hidden" name="original_id" value="{{.ID}}">
 
       <div class="form-group">
-        <label for="edit-title-{{.ID}}">Title</label>
+        <label for="edit-title-{{.ID}}">{{index .T "notes.title_label"}}</label>
         <input id="edit-title-{{.ID}}" name="title" type="text"
                value="{{.Title}}" required
                aria-describedby="edit-title-error-{{.ID}}">
@@ -19,9 +19,9 @@
       </div>
 
       <div class="form-group">
-        <label for="edit-notebook-{{.ID}}">Notebook</label>
+        <label for="edit-notebook-{{.ID}}">{{index .T "notes.notebook_label"}}</label>
         <select id="edit-notebook-{{.ID}}" name="notebook_id">
-          <option value="">None</option>
+          <option value="">{{index .T "notes.none"}}</option>
           {{range .Notebooks}}
           <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
           {{end}}
@@ -30,7 +30,7 @@
 
       <div class="form-group">
         <label for="edit-content-{{.ID}}">
-          Content <span class="sr-only">(Markdown supported)</span>
+          {{index .T "notes.content_label"}} <span class="sr-only">({{index .T "notes.markdown_hint_sr"}})</span>
         </label>
         <textarea id="edit-content-{{.ID}}" name="content" rows="10" required
                   class="editor-textarea"
@@ -40,9 +40,9 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="submit" class="btn btn-primary">{{index .T "notes.save"}}</button>
         <a href="/notes" class="btn btn-ghost"
-           aria-label="Cancel editing &#8220;{{.Title}}&#8221;">Cancel</a>
+           aria-label="{{index .T "notes.cancel"}} “{{.Title}}”">{{index .T "notes.cancel"}}</a>
       </div>
     </form>
   </article>

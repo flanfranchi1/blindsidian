@@ -1,10 +1,10 @@
 {{define "signup.gohtml"}}
 <!doctype html>
-<html lang="en">
+<html lang="{{.Locale}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Create account — notty</title>
+  <title>{{index .T "auth.signup_page_title"}}</title>
   {{template "head-assets" .}}
 </head>
 <body>
@@ -12,8 +12,8 @@
   <main id="main-content">
     <div class="auth-layout">
       <div class="auth-card">
-        <h1>Create account</h1>
-        <p class="lead">Start writing notes in seconds.</p>
+        <h1>{{index .T "auth.signup_title"}}</h1>
+        <p class="lead">{{index .T "auth.signup_lead"}}</p>
         {{if .Error}}
         <div role="alert" aria-live="assertive" class="form-error" style="margin-bottom:var(--s-3)">
           {{.Error}}
@@ -21,24 +21,24 @@
         {{end}}
         <form method="post" action="/signup" novalidate>
           <div class="form-group">
-            <label for="email">Email address</label>
+            <label for="email">{{index .T "auth.email"}}</label>
             <input id="email" name="email" type="email" required
                    autocomplete="email"
                    autofocus
                    spellcheck="false">
           </div>
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">{{index .T "auth.password"}}</label>
             <input id="password" name="password" type="password" required
                    autocomplete="new-password">
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
-              Create account
+              {{index .T "auth.signup_submit"}}
             </button>
           </div>
         </form>
-        <p class="auth-switch">Already registered? <a href="/login">Log in</a></p>
+        <p class="auth-switch">{{index .T "auth.already_registered"}} <a href="/login">{{index .T "auth.login_submit"}}</a></p>
       </div>
     </div>
   </main>

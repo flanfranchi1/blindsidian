@@ -15,14 +15,14 @@
             hx-swap="innerHTML"
             accesskey="e"
             aria-controls="note-display-area"
-            aria-label="Edit this note (Alt+E)">
-      Edit
+            aria-label="{{index .T "note.edit_note"}} (Alt+E)">
+      {{index .T "notes.edit"}}
     </button>
   </div>
 
   {{if .Backlinks}}
   <aside class="note-backlinks" aria-labelledby="backlinks-heading">
-    <h2 id="backlinks-heading">Linked from</h2>
+    <h2 id="backlinks-heading">{{index .T "note.backlinks_heading"}}</h2>
     <ul role="list">
       {{range .Backlinks}}
       <li><a href="/notes/{{.ID}}">{{.Title}}</a></li>

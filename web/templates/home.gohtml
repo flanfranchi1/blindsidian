@@ -1,10 +1,10 @@
 {{define "home.gohtml"}}
 <!doctype html>
-<html lang="en">
+<html lang="{{.Locale}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>notty — your notes, plainly</title>
+  <title>{{index .T "home.title"}}</title>
   {{template "head-assets" .}}
 </head>
 <body>
@@ -13,11 +13,18 @@
     <div class="auth-layout">
       <div class="auth-card auth-card--hero">
         <h1>notty</h1>
-        <p class="lead">A minimal, accessible place for your notes.<br>Write in Markdown. Link ideas. Stay focused.</p>
-        <nav aria-label="Account options">
+        <p class="lead">{{index .T "home.tagline"}}<br>{{index .T "home.tagline_sub"}}</p>
+        <nav aria-label="{{index .T "nav.account_nav_label"}}">
           <ul class="auth-actions" role="list">
-            <li><a href="/signup" class="btn btn-primary">Create account</a></li>
-            <li><a href="/login" class="btn btn-ghost">Log in</a></li>
+            <li><a href="/signup" class="btn btn-primary">{{index .T "home.cta_signup"}}</a></li>
+            <li><a href="/login" class="btn btn-ghost">{{index .T "home.cta_login"}}</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="{{index .T "nav.lang_switcher_label"}}" class="lang-switcher">
+          <ul role="list">
+            <li><a href="/?lang=en" lang="en" hreflang="en"{{if eq .Locale "en"}} aria-current="true"{{end}}>English</a></li>
+            <li><a href="/?lang=es" lang="es" hreflang="es"{{if eq .Locale "es"}} aria-current="true"{{end}}>Español</a></li>
+            <li><a href="/?lang=pt" lang="pt-BR" hreflang="pt-BR"{{if eq .Locale "pt-BR"}} aria-current="true"{{end}}>Português (BR)</a></li>
           </ul>
         </nav>
       </div>

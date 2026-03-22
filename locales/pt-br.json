@@ -1,0 +1,61 @@
+{
+  "nav.notes": "Notas",
+  "nav.logout": "Sair",
+  "nav.home_label": "Notty — ir para o início",
+
+  "home.title": "notty — suas notas, simplesmente",
+  "home.tagline": "Um lugar mínimo e acessível para suas notas.",
+  "home.tagline_sub": "Escreva em Markdown. Conecte ideias. Mantenha o foco.",
+  "home.cta_signup": "Criar conta",
+  "home.cta_login": "Entrar",
+
+  "auth.email": "E-mail",
+  "auth.password": "Senha",
+  "auth.signup_title": "Criar conta",
+  "auth.signup_submit": "Cadastrar",
+  "auth.login_title": "Entrar",
+  "auth.login_submit": "Entrar",
+  "auth.login_link": "Já tem conta? Entre",
+  "auth.signup_link": "Não tem conta? Cadastre-se",
+  "auth.forgot_password": "Esqueceu a senha?",
+  "auth.forgot_password_title": "Redefinir senha",
+  "auth.forgot_password_submit": "Enviar link",
+
+  "notes.page_title": "Notas — notty",
+  "notes.heading": "Suas notas",
+  "notes.new_note": "Nova nota",
+  "notes.new_notebook": "Novo caderno",
+  "notes.untitled": "Sem título",
+  "notes.search_placeholder": "Pesquisar notas…",
+  "notes.search_label": "Pesquisar",
+  "notes.edit": "Editar",
+  "notes.delete": "Excluir",
+  "notes.save": "Salvar",
+  "notes.cancel": "Cancelar",
+  "notes.title_label": "Título",
+  "notes.content_label": "Conteúdo",
+  "notes.notebooks_heading": "Cadernos",
+  "notes.all_notes": "Todas as notas",
+  "notes.updated_at": "Atualizado",
+
+  "note.view_title_suffix": "— notty",
+  "note.backlinks_heading": "Mencionado em",
+  "note.edit_note": "Editar nota",
+
+  "error.required_fields": "E-mail e senha são obrigatórios.",
+  "error.email_taken": "E-mail já está cadastrado.",
+  "error.invalid_credentials": "E-mail ou senha incorretos.",
+
+  "footer.tagline": "notty — suas notas, simplesmente.",
+
+  "tutorial.notebook.name": "Tutorial",
+  "tutorial.note1.title": "Formatação Básica",
+  "tutorial.note2.title": "Elementos Avançados",
+  "tutorial.note3.title": "Interconectividade",
+
+  "tutorial.markdown.formatting": "# Formatação Básica\n\nBem-vindo ao **notty**! Esta nota demonstra os recursos de *formatação básica* do parser de Markdown.\n\n## Negrito e Itálico\n\nUse `**asteriscos duplos**` para **negrito**, `*asterisco simples*` para *itálico* e `***ambos***` para ***negrito e itálico***.\n\n## Títulos\n\nTítulos são criados com o símbolo `#`:\n\n# H1 — Título Principal\n## H2 — Seção\n### H3 — Subseção\n\n## Listas de Tarefas\n\nAcompanhe seu progresso com caixas de seleção:\n\n- [x] Criar uma conta no notty\n- [x] Ler esta nota de tutorial\n- [ ] Escrever sua primeira nota\n- [ ] Explorar [[Elementos Avançados]]\n\n#tutorial #formatacao",
+
+  "tutorial.markdown.advanced": "# Elementos Avançados\n\nEsta nota demonstra links externos, tabelas e imagens.\n\n## Links Externos\n\nVisite o [Guia de Markdown](https://www.markdownguide.org) para uma referência completa.\n\n## Tabela\n\nUma comparação simples de recursos:\n\n| Recurso | Texto Simples | Markdown |\n| --- | --- | --- |\n| Negrito / Itálico | Não | Sim |\n| Títulos | Não | Sim |\n| Listas de Tarefas | Não | Sim |\n| Wikilinks | Não | Sim |\n\n## Imagem\n\n![Uma ampla paisagem montanhosa com picos cobertos de neve refletidos em um lago alpino calmo](https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800)\n\nContinue para [[Interconectividade]] para aprender sobre como conectar notas.\n\n#tutorial #avancado",
+
+  "tutorial.markdown.wikilinks": "# Interconectividade\n\nUm dos recursos mais poderosos do notty são os **Wikilinks** — uma sintaxe simples para conectar notas em uma rede de conhecimento pessoal.\n\n## Como os Wikilinks Funcionam\n\nEnvolva qualquer título de nota com colchetes duplos:\n\n```\n[[Título da Nota]]\n```\n\nO notty resolve o link automaticamente se existir uma nota com esse título exato.\n\n## Links para as Outras Notas do Tutorial\n\n- [[Formatação Básica]] — cobre negrito, itálico, títulos e listas de tarefas.\n- [[Elementos Avançados]] — cobre links externos, tabelas e imagens.\n\n## Links Fantasma\n\nSe você escrever `[[Uma Nota Que Ainda Não Existe]]`, o notty a marcará como um *link fantasma*. Clicar nele abre um formulário de nova nota pré-preenchido com esse título — uma ótima maneira de expandir sua base de conhecimento organicamente.\n\n#tutorial #wikilinks"
+}

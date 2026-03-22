@@ -9,6 +9,7 @@ import (
 	"github.com/flanfranchi1/notty/internal/auth"
 	"github.com/flanfranchi1/notty/internal/database"
 	"github.com/flanfranchi1/notty/internal/handlers"
+	"github.com/flanfranchi1/notty/internal/i18n"
 )
 
 type Config struct {
@@ -49,6 +50,11 @@ func main() {
 
 	sessions := auth.NewSessionStore()
 
+	bundle, err := i18n.LoadEmbedded()
+	if err != nil {
+		log.Fatalf("failed to load i18n bundle: %v", err)
+	}
+
 	templates := template.Must(template.New("pages").ParseGlob("./web/templates/*.gohtml"))
 
 	server := &handlers.Server{
@@ -57,27 +63,31 @@ func main() {
 		SystemDB:          systemDB,
 		Templates:         templates,
 		SessionCookieName: cfg.SessionName,
+		Bundle:            bundle,
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		server.RenderTemplate(w, "home.gohtml", nil)
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		server.RenderTemplate(w, r, "home.gohtml", nil)
 	})
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
-	http.HandleFunc("/signup", server.SignupHandler)
-	http.HandleFunc("/login", server.LoginHandler)
-	http.HandleFunc("/notes", server.NotesHandler)
-	http.HandleFunc("/notes/create", server.CreateNoteHandler)
-	http.HandleFunc("/notebooks/create", server.CreateNotebookHandler)
-	http.HandleFunc("/notebooks/", server.NotebookViewHandler)
-	http.HandleFunc("/notes/view", server.ViewNoteHandler)
-	http.HandleFunc("/notes/view/edit", server.ViewNoteEditHandler)
-	http.HandleFunc("/notes/view/update", server.ViewNoteUpdateHandler)
-	http.HandleFunc("/notes/", server.NoteActionHandler)
-	http.HandleFunc("/search", server.SearchHandler)
-	http.HandleFunc("/logout", server.LogoutHandler)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
+	mux.HandleFunc("/signup", server.SignupHandler)
+	mux.HandleFunc("/login", server.LoginHandler)
+	mux.HandleFunc("/notes", server.NotesHandler)
+	mux.HandleFunc("/notes/create", server.CreateNoteHandler)
+	mux.HandleFunc("/notebooks/create", server.CreateNotebookHandler)
+	mux.HandleFunc("/notebooks/", server.NotebookViewHandler)
+	mux.HandleFunc("/notes/view", server.ViewNoteHandler)
+	mux.HandleFunc("/notes/view/edit", server.ViewNoteEditHandler)
+	mux.HandleFunc("/notes/view/update", server.ViewNoteUpdateHandler)
+	mux.HandleFunc("/notes/", server.NoteActionHandler)
+	mux.HandleFunc("/search", server.SearchHandler)
+	mux.HandleFunc("/logout", server.LogoutHandler)
+	mux.HandleFunc("/forgot-password", server.ForgotPasswordHandler)
 
 	log.Printf("starting server on %s", cfg.Port)
-	if err := http.ListenAndServe(cfg.Port, nil); err != nil {
+	if err := http.ListenAndServe(cfg.Port, handlers.I18nMiddleware(mux)); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }

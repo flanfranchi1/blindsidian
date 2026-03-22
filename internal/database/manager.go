@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/flanfranchi1/notty/internal/markup"
+	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
@@ -448,6 +450,14 @@ func (m *DatabaseManager) GetUserByEmail(db *sql.DB, email string) (*User, error
 	return user, nil
 }
 
+func (m *DatabaseManager) UpdateUserPassword(db *sql.DB, userID string, newPasswordHash string) error {
+	_, err := db.Exec(`UPDATE users SET password_hash = ? WHERE id = ?;`, newPasswordHash, userID)
+	if err != nil {
+		return fmt.Errorf("unable to update password: %w", err)
+	}
+	return nil
+}
+
 func (m *DatabaseManager) CreateNotebook(db *sql.DB, notebook Notebook) error {
 	insert := `INSERT INTO notebooks (id, name) VALUES (?, ?);`
 	_, err := db.Exec(insert, notebook.ID, notebook.Name)
@@ -506,4 +516,81 @@ func (m *DatabaseManager) GetNotesByNotebookID(db *sql.DB, notebookID string) ([
 		notes = append(notes, n)
 	}
 	return notes, nil
+}
+
+// SeedTutorial populates a new user's database with a "Tutorial" notebook
+// containing three notes that showcase the Notty Markdown parser features.
+// translations is the flat key→value map for the user's locale, obtained via
+// bundle.Translations(locale). The call is intentionally non-destructive: if
+// any step fails the error is returned and the caller may choose to log and
+// continue rather than blocking account creation.
+func (m *DatabaseManager) SeedTutorial(db *sql.DB, translations map[string]string) error {
+	tr := func(key string) string {
+		if v, ok := translations[key]; ok {
+			return v
+		}
+		return key
+	}
+
+	notebook := Notebook{
+		ID:   uuid.NewString(),
+		Name: tr("tutorial.notebook.name"),
+	}
+	if err := m.CreateNotebook(db, notebook); err != nil {
+		return fmt.Errorf("SeedTutorial: create notebook: %w", err)
+	}
+
+	tutorialNotes := []Note{
+		{
+			ID:         uuid.NewString(),
+			Title:      tr("tutorial.note1.title"),
+			Content:    tr("tutorial.markdown.formatting"),
+			NotebookID: notebook.ID,
+		},
+		{
+			ID:         uuid.NewString(),
+			Title:      tr("tutorial.note2.title"),
+			Content:    tr("tutorial.markdown.advanced"),
+			NotebookID: notebook.ID,
+		},
+		{
+			ID:         uuid.NewString(),
+			Title:      tr("tutorial.note3.title"),
+			Content:    tr("tutorial.markdown.wikilinks"),
+			NotebookID: notebook.ID,
+		},
+	}
+
+	for _, note := range tutorialNotes {
+		if err := m.CreateNote(db, note); err != nil {
+			return fmt.Errorf("SeedTutorial: create note %q: %w", note.Title, err)
+		}
+	}
+
+	// Resolve wikilinks now that all tutorial notes exist, then insert tags.
+	for _, note := range tutorialNotes {
+		linkedTitles := markup.ParseWikiLinks(note.Content)
+		targetIDs := make([]string, 0, len(linkedTitles))
+		for _, title := range linkedTitles {
+			target, err := m.GetNoteByTitle(db, title)
+			if err != nil || target == nil {
+				continue
+			}
+			targetIDs = append(targetIDs, target.ID)
+		}
+		if len(targetIDs) > 0 {
+			if err := m.InsertNoteLinks(db, note.ID, targetIDs); err != nil {
+				return fmt.Errorf("SeedTutorial: insert links for %q: %w", note.Title, err)
+			}
+		}
+
+		tags := markup.ParseTags(note.Content)
+		if len(tags) > 0 {
+			if err := m.InsertNoteTags(db, note.ID, tags); err != nil {
+				return fmt.Errorf("SeedTutorial: insert tags for %q: %w", note.Title, err)
+			}
+		}
+	}
+
+	return nil
 }

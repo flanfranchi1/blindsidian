@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{.Locale}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{if .Notebook}}{{.Notebook.Name}} — {{end}}Notes — notty</title>
+  <title>{{if .Notebook}}{{.Notebook.Name}} — {{end}}{{index .T "notes.page_title"}}</title>
   {{template "head-assets" .}}
 </head>
-<body>
+<body
+  data-msg-editing="{{index .T "note.editing_mode"}}"
+  data-msg-list-updated="{{index .T "notes.list_updated"}}">
   {{template "site-header" .}}
   {{template "status-region" .}}
 
   <main id="main-content" class="page-wrapper">
     <h1 class="page-heading">
-      {{if .Notebook}}{{.Notebook.Name}}{{else}}Your notes{{end}}
+      {{if .Notebook}}{{.Notebook.Name}}{{else}}{{index .T "notes.heading"}}{{end}}
     </h1>
 
     <div class="notes-layout">
@@ -21,14 +23,14 @@
       <aside class="notes-sidebar" aria-labelledby="notebooks-heading">
         <div class="notebooks-sidebar-wrapper">
           <section class="section-group">
-            <h2 id="notebooks-heading">Notebooks</h2>
+            <h2 id="notebooks-heading">{{index .T "notes.notebooks_heading"}}</h2>
             {{if .Notebooks}}
-            <nav aria-label="Notebook list">
+            <nav aria-label="{{index .T "notes.notebook_list_label"}}">
               <ul class="notebook-list" role="list">
                 <li>
                   <a href="/notes"
                      {{if not .Notebook}}aria-current="page"{{end}}>
-                    All notes
+                    {{index .T "notes.all_notes"}}
                   </a>
                 </li>
                 {{range .Notebooks}}
@@ -46,19 +48,19 @@
             <hr class="divider" style="margin-block:var(--s-4)">
 
             <section aria-labelledby="new-notebook-heading">
-              <h3 id="new-notebook-heading">New notebook</h3>
+              <h3 id="new-notebook-heading">{{index .T "notes.new_notebook"}}</h3>
               <form method="post" action="/notebooks/create" novalidate>
                 <div class="form-group">
-                  <label for="notebook-name" class="sr-only">Notebook name</label>
+                  <label for="notebook-name" class="sr-only">{{index .T "notes.notebook_name_label"}}</label>
                   <input id="notebook-name" name="name" type="text" required
-                         placeholder="Notebook name"
+                         placeholder="{{index .T "notes.notebook_name_label"}}"
                          autocomplete="off"
                          aria-describedby="notebook-name-error">
                   <div id="notebook-name-error" class="form-error"
                        role="alert" aria-live="assertive">{{.NotebookNameError}}</div>
                 </div>
                 <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center">
-                  Create notebook
+                  {{index .T "notes.create_notebook_btn"}}
                 </button>
               </form>
             </section>
@@ -71,10 +73,10 @@
 
         <!-- Search (topmost: most frequently used action) -->
         <section class="section-group" aria-labelledby="search-heading">
-          <h2 id="search-heading">Search</h2>
+          <h2 id="search-heading">{{index .T "notes.search_label"}}</h2>
           <div role="search">
             <div class="form-group">
-              <label for="global-search">Search notes</label>
+              <label for="global-search">{{index .T "notes.search_label"}}</label>
               <input id="global-search"
                      type="search"
                      name="q"
@@ -86,15 +88,15 @@
                      hx-indicator="#search-indicator"
                      aria-controls="search-results"
                      aria-describedby="search-hint">
-              <span id="search-hint" class="sr-only">Results update automatically as you type.</span>
+              <span id="search-hint" class="sr-only">{{index .T "notes.search_hint"}}</span>
             </div>
             <p class="search-status">
-              <span id="search-indicator" class="htmx-indicator" aria-hidden="true">Searching…</span>
+              <span id="search-indicator" class="htmx-indicator" aria-hidden="true">{{index .T "notes.searching"}}</span>
             </p>
           </div>
           <div id="search-results"
                role="region"
-               aria-label="Search results"
+               aria-label="{{index .T "notes.search_results_label"}}"
                aria-live="polite"
                aria-atomic="true"></div>
         </section>
@@ -103,10 +105,10 @@
 
         <!-- Create note -->
         <section class="section-group" aria-labelledby="create-note-heading">
-          <h2 id="create-note-heading">New note</h2>
+          <h2 id="create-note-heading">{{index .T "notes.new_note"}}</h2>
           <form method="post" action="/notes/create" novalidate>
             <div class="form-group">
-              <label for="title">Title</label>
+              <label for="title">{{index .T "notes.title_label"}}</label>
               <input id="title" name="title" type="text"
                      value="{{.CreateTitle}}" required
                      autocomplete="off"
@@ -115,9 +117,9 @@
                    role="alert" aria-live="assertive">{{.TitleError}}</div>
             </div>
             <div class="form-group">
-              <label for="notebook-select">Notebook</label>
+              <label for="notebook-select">{{index .T "notes.notebook_label"}}</label>
               <select id="notebook-select" name="notebook_id">
-                <option value="">None</option>
+                <option value="">{{index .T "notes.none"}}</option>
                 {{range .Notebooks}}
                 <option value="{{.ID}}">{{.Name}}</option>
                 {{end}}
@@ -125,18 +127,18 @@
             </div>
             <div class="form-group">
               <label for="content">
-                Content
-                <span class="sr-only">(Markdown supported)</span>
+                {{index .T "notes.content_label"}}
+                <span class="sr-only">({{index .T "notes.markdown_hint_sr"}})</span>
               </label>
               <textarea id="content" name="content" rows="8" required
                         class="editor-textarea"
                         aria-describedby="content-error content-hint">{{.Content}}</textarea>
-              <span id="content-hint" class="form-hint">Markdown supported · link notes with [[Title]]</span>
+              <span id="content-hint" class="form-hint">{{index .T "notes.markdown_hint"}}</span>
               <div id="content-error" class="form-error"
                    role="alert" aria-live="assertive">{{.ContentError}}</div>
             </div>
             <div class="form-actions">
-              <button type="submit" class="btn btn-primary">Save note</button>
+              <button type="submit" class="btn btn-primary">{{index .T "notes.save"}}</button>
             </div>
           </form>
         </section>
@@ -145,7 +147,7 @@
 
         <!-- Notes list -->
         <section aria-labelledby="notes-list-heading">
-          <h2 id="notes-list-heading">All notes</h2>
+          <h2 id="notes-list-heading">{{index .T "notes.all_notes"}}</h2>
           {{if .Notes}}
           <ul class="notes-list" id="notes-list" role="list">
             {{range .Notes}}
@@ -153,7 +155,7 @@
             {{end}}
           </ul>
           {{else}}
-          <p>No notes yet. Create your first one above.</p>
+          <p>{{index .T "notes.empty_state"}}</p>
           {{end}}
         </section>
 
@@ -172,7 +174,7 @@
         var textarea = ev.detail.target.querySelector('textarea');
         if (textarea) {
           textarea.focus();
-          if (statusEl) statusEl.textContent = 'Edit mode active.';
+          if (statusEl) statusEl.textContent = document.body.dataset.msgEditing;
           return;
         }
         var heading = ev.detail.target.querySelector('h3, h2');
@@ -180,7 +182,7 @@
           heading.setAttribute('tabindex', '-1');
           heading.focus();
         }
-        if (statusEl) statusEl.textContent = 'Note list updated.';
+        if (statusEl) statusEl.textContent = document.body.dataset.msgListUpdated;
       }, 80);
     });
   </script>

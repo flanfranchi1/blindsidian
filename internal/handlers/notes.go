@@ -11,15 +11,43 @@ import (
 	"strings"
 
 	"github.com/flanfranchi1/notty/internal/database"
+	"github.com/flanfranchi1/notty/internal/i18n"
 	"github.com/flanfranchi1/notty/internal/markup"
 	"github.com/google/uuid"
 )
 
-func (s *Server) RenderTemplate(w http.ResponseWriter, name string, data interface{}) {
+// RenderTemplate executes a named template, automatically injecting the
+// resolved locale tag ("Locale") and the corresponding translation map ("T")
+// into the template data so every page can use {{.Locale}} and {{index .T "key"}}.
+func (s *Server) RenderTemplate(w http.ResponseWriter, r *http.Request, name string, data interface{}) {
+	// Resolve locale and translations from the request context.
+	locale := i18n.LocaleFromContext(r.Context())
+	var translations map[string]string
+	if s.Bundle != nil {
+		translations = s.Bundle.Translations(locale)
+	} else {
+		translations = map[string]string{}
+	}
+
+	// Normalise data into map[string]interface{} so we can inject extra keys.
+	td := make(map[string]interface{})
+	switch d := data.(type) {
+	case map[string]interface{}:
+		for k, v := range d {
+			td[k] = v
+		}
+	case map[string]string:
+		for k, v := range d {
+			td[k] = v
+		}
+	}
+	td["Locale"] = locale
+	td["T"] = translations
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.Templates.ExecuteTemplate(w, name, data); err != nil {
+	if err := s.Templates.ExecuteTemplate(w, name, td); err != nil {
 		log.Printf("RenderTemplate (%s): ExecuteTemplate: %v", name, err)
-		http.Error(w, "unable to render page", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.render_failed"), http.StatusInternalServerError)
 	}
 }
 
@@ -33,7 +61,7 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("NotesHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -41,7 +69,7 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 	notes, err := s.DBManager.ListNotes(db)
 	if err != nil {
 		log.Printf("NotesHandler: ListNotes: %v", err)
-		http.Error(w, "unable to load notes", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 
@@ -69,7 +97,7 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 		if err != nil {
 			log.Printf("NotesHandler: RenderMarkdownWithWikiLinks: %v", err)
-			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 		rendered = append(rendered, RenderNote{
@@ -87,24 +115,24 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		notebooks = []database.Notebook{}
 	}
-	s.RenderTemplate(w, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks})
+	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks})
 }
 
 func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := s.currentUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, s.t(r, "error.unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
 	if r.Method == http.MethodGet {
 		createTitle := r.URL.Query().Get("title")
-		s.RenderTemplate(w, "notes.gohtml", map[string]interface{}{"CreateTitle": createTitle})
+		s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"CreateTitle": createTitle})
 		return
 	}
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -114,7 +142,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 		db, err := s.DBManager.OpenUserDB(userID)
 		if err != nil {
 			log.Printf("CreateNoteHandler: OpenUserDB (validation): %v", err)
-			http.Error(w, "unable to open user database", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 			return
 		}
 		defer db.Close()
@@ -122,7 +150,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 		notes, err := s.DBManager.ListNotes(db)
 		if err != nil {
 			log.Printf("CreateNoteHandler: ListNotes: %v", err)
-			http.Error(w, "unable to load notes", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 
@@ -150,7 +178,7 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 			htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 			if err != nil {
 				log.Printf("CreateNoteHandler: RenderMarkdownWithWikiLinks: %v", err)
-				http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+				http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 				return
 			}
 			rendered = append(rendered, RenderNote{
@@ -173,14 +201,14 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 		if content == "" {
 			data["ContentError"] = "Content is required"
 		}
-		s.RenderTemplate(w, "notes.gohtml", data)
+		s.RenderTemplate(w, r, "notes.gohtml", data)
 		return
 	}
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("CreateNoteHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -188,18 +216,18 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	existing, err := s.DBManager.GetNoteByTitle(db, title)
 	if err != nil {
 		log.Printf("CreateNoteHandler: GetNoteByTitle (existing): %v", err)
-		http.Error(w, "unable to check existing note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 	if existing != nil {
-		http.Error(w, "note title already exists", http.StatusConflict)
+		http.Error(w, s.t(r, "error.note_title_conflict"), http.StatusConflict)
 		return
 	}
 
 	note := database.Note{ID: uuid.NewString(), Title: title, Content: content, NotebookID: r.FormValue("notebook_id")}
 	if err := s.DBManager.CreateNote(db, note); err != nil {
 		log.Printf("CreateNoteHandler: CreateNote: %v", err)
-		http.Error(w, "unable to create note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 
@@ -225,14 +253,14 @@ func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := s.currentUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, s.t(r, "error.unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("NoteActionHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -244,17 +272,17 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		note, err := s.DBManager.GetNoteByID(db, noteID)
 		if err != nil {
 			log.Printf("NoteActionHandler: GetNoteByID: %v", err)
-			http.Error(w, "note not found", http.StatusNotFound)
+			http.Error(w, s.t(r, "error.note_not_found"), http.StatusNotFound)
 			return
 		}
 		if note == nil {
-			http.Error(w, "note not found", http.StatusNotFound)
+			http.Error(w, s.t(r, "error.note_not_found"), http.StatusNotFound)
 			return
 		}
 		backlinks, err := s.DBManager.GetBacklinks(db, noteID)
 		if err != nil {
 			log.Printf("NoteActionHandler: GetBacklinks: %v", err)
-			http.Error(w, "unable to get backlinks", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 		noteResolver := func(title string) (string, bool, error) {
@@ -270,14 +298,14 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 		if err != nil {
 			log.Printf("NoteActionHandler: RenderMarkdownWithWikiLinks: %v", err)
-			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
-		s.RenderTemplate(w, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+		s.RenderTemplate(w, r, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
 		return
 	}
 	if len(parts) < 2 {
-		http.Error(w, "not found", http.StatusNotFound)
+		http.Error(w, s.t(r, "error.not_found"), http.StatusNotFound)
 		return
 	}
 
@@ -289,11 +317,11 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		note, err := s.DBManager.GetNoteByID(db, noteID)
 		if err != nil {
 			log.Printf("NoteActionHandler edit: GetNoteByID: %v", err)
-			http.Error(w, "note not found", http.StatusNotFound)
+			http.Error(w, s.t(r, "error.note_not_found"), http.StatusNotFound)
 			return
 		}
 		if note == nil {
-			http.Error(w, "note not found", http.StatusNotFound)
+			http.Error(w, s.t(r, "error.note_not_found"), http.StatusNotFound)
 			return
 		}
 
@@ -313,11 +341,10 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 			notebooks = []database.Notebook{}
 		}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		s.Templates.ExecuteTemplate(w, "note_item_edit_fragment", editData{ID: note.ID, Title: note.Title, Content: note.Content, Raw: note.Content, NotebookID: note.NotebookID, Notebooks: notebooks, TitleError: "", ContentError: ""})
+		s.renderFragment(w, r, "note_item_edit_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "Content": note.Content, "Raw": note.Content, "NotebookID": note.NotebookID, "Notebooks": notebooks, "TitleError": "", "ContentError": ""})
 	case "update":
 		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
 			return
 		}
 		title := r.FormValue("title")
@@ -341,13 +368,12 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 				notebooks = []database.Notebook{}
 			}
 			data["Notebooks"] = notebooks
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			s.Templates.ExecuteTemplate(w, "note_item_edit_fragment", data)
+			s.renderFragment(w, r, "note_item_edit_fragment", data)
 			return
 		}
 		if err := s.DBManager.UpdateNote(db, database.Note{ID: noteID, Title: title, Content: content, NotebookID: notebookID}); err != nil {
 			log.Printf("NoteActionHandler update: UpdateNote: %v", err)
-			http.Error(w, "unable to update note", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 
@@ -371,11 +397,11 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		note, err := s.DBManager.GetNoteByID(db, noteID)
 		if err != nil {
 			log.Printf("NoteActionHandler update: GetNoteByID (after update): %v", err)
-			http.Error(w, "note not found after update", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.note_not_found"), http.StatusInternalServerError)
 			return
 		}
 		if note == nil {
-			http.Error(w, "note not found after update", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.note_not_found"), http.StatusInternalServerError)
 			return
 		}
 		noteResolver := func(title string) (string, bool, error) {
@@ -391,28 +417,27 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 		if err != nil {
 			log.Printf("NoteActionHandler update: RenderMarkdownWithWikiLinks: %v", err)
-			http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 		if s.isHTMXRequest(r) {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			s.Templates.ExecuteTemplate(w, "note_item_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "UpdatedAt": note.UpdatedAt, "RenderedHTML": template.HTML(htmlContent)})
+			s.renderFragment(w, r, "note_item_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "UpdatedAt": note.UpdatedAt, "RenderedHTML": template.HTML(htmlContent)})
 			return
 		}
 		http.Redirect(w, r, "/notes?msg=Note+saved", http.StatusSeeOther)
 	case "delete":
 		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
 			return
 		}
 		if err := s.DBManager.DeleteNote(db, noteID); err != nil {
 			log.Printf("NoteActionHandler delete: DeleteNote: %v", err)
-			http.Error(w, "unable to delete note", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 		http.Redirect(w, r, "/notes?msg=Note+deleted", http.StatusSeeOther)
 	default:
-		http.Error(w, "not found", http.StatusNotFound)
+		http.Error(w, s.t(r, "error.not_found"), http.StatusNotFound)
 	}
 }
 
@@ -420,7 +445,42 @@ func (s *Server) isHTMXRequest(r *http.Request) bool {
 	return r.Header.Get("HX-Request") == "true"
 }
 
-func (s *Server) renderNoteViewFragment(w http.ResponseWriter, note *database.Note, db *sql.DB) error {
+// t returns the translated string for key in the current request's locale.
+// Falls back to the key name itself so missing translations are always visible.
+func (s *Server) t(r *http.Request, key string) string {
+	locale := i18n.LocaleFromContext(r.Context())
+	if s.Bundle != nil {
+		if msgs := s.Bundle.Translations(locale); msgs != nil {
+			if v, ok := msgs[key]; ok {
+				return v
+			}
+		}
+	}
+	return key
+}
+
+// renderFragment executes a partial (HTMX) template with the same locale and
+// translation map that RenderTemplate injects into full-page templates.
+func (s *Server) renderFragment(w http.ResponseWriter, r *http.Request, name string, data map[string]interface{}) {
+	locale := i18n.LocaleFromContext(r.Context())
+	var translations map[string]string
+	if s.Bundle != nil {
+		translations = s.Bundle.Translations(locale)
+	} else {
+		translations = map[string]string{}
+	}
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+	data["Locale"] = locale
+	data["T"] = translations
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.Templates.ExecuteTemplate(w, name, data); err != nil {
+		log.Printf("renderFragment (%s): %v", name, err)
+	}
+}
+
+func (s *Server) renderNoteViewFragment(w http.ResponseWriter, r *http.Request, note *database.Note, db *sql.DB) error {
 	noteResolver := func(title string) (string, bool, error) {
 		n, err := s.DBManager.GetNoteByTitle(db, title)
 		if err != nil {
@@ -439,8 +499,8 @@ func (s *Server) renderNoteViewFragment(w http.ResponseWriter, note *database.No
 	if err != nil {
 		return err
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	return s.Templates.ExecuteTemplate(w, "note_view_fragment", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+	s.renderFragment(w, r, "note_view_fragment", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+	return nil
 }
 
 func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
@@ -452,14 +512,14 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	title := r.URL.Query().Get("title")
 	if title == "" {
-		http.Error(w, "title is required", http.StatusBadRequest)
+		http.Error(w, s.t(r, "error.title_required"), http.StatusBadRequest)
 		return
 	}
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("ViewNoteHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -467,7 +527,7 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 	note, err := s.DBManager.GetNoteByTitle(db, title)
 	if err != nil {
 		log.Printf("ViewNoteHandler: GetNoteByTitle: %v", err)
-		http.Error(w, "unable to get note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.note_not_found"), http.StatusInternalServerError)
 		return
 	}
 	if note == nil {
@@ -476,9 +536,9 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.isHTMXRequest(r) {
-		if err := s.renderNoteViewFragment(w, note, db); err != nil {
+		if err := s.renderNoteViewFragment(w, r, note, db); err != nil {
 			log.Printf("ViewNoteHandler: renderNoteViewFragment: %v", err)
-			http.Error(w, "unable to render note fragment", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.render_failed"), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -496,35 +556,35 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 	htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
 	if err != nil {
 		log.Printf("ViewNoteHandler: RenderMarkdownWithWikiLinks: %v", err)
-		http.Error(w, "unable to render markdown", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 	backlinks, err := s.DBManager.GetBacklinks(db, note.ID)
 	if err != nil {
 		log.Printf("ViewNoteHandler: GetBacklinks: %v", err)
-		http.Error(w, "unable to get backlinks", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
-	s.RenderTemplate(w, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+	s.RenderTemplate(w, r, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
 }
 
 func (s *Server) ViewNoteEditHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := s.currentUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, s.t(r, "error.unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
 	title := r.URL.Query().Get("title")
 	if title == "" {
-		http.Error(w, "title is required", http.StatusBadRequest)
+		http.Error(w, s.t(r, "error.title_required"), http.StatusBadRequest)
 		return
 	}
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("ViewNoteEditHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -532,50 +592,38 @@ func (s *Server) ViewNoteEditHandler(w http.ResponseWriter, r *http.Request) {
 	note, err := s.DBManager.GetNoteByTitle(db, title)
 	if err != nil {
 		log.Printf("ViewNoteEditHandler: GetNoteByTitle: %v", err)
-		http.Error(w, "unable to get note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.note_not_found"), http.StatusInternalServerError)
 		return
 	}
 	if note == nil {
-		http.Error(w, "note not found", http.StatusNotFound)
+		http.Error(w, s.t(r, "error.note_not_found"), http.StatusNotFound)
 		return
-	}
-
-	data := struct {
-		Title        string
-		Raw          string
-		ID           string
-		NotebookID   string
-		Notebooks    []database.Notebook
-		TitleError   string
-		ContentError string
-	}{
-		Title:        note.Title,
-		Raw:          note.Content,
-		ID:           note.ID,
-		NotebookID:   note.NotebookID,
-		TitleError:   "",
-		ContentError: "",
 	}
 
 	notebooks, err := s.DBManager.ListNotebooks(db)
 	if err != nil {
 		notebooks = []database.Notebook{}
 	}
-	data.Notebooks = notebooks
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	s.Templates.ExecuteTemplate(w, "note_edit_fragment", data)
+	s.renderFragment(w, r, "note_edit_fragment", map[string]interface{}{
+		"Title":      note.Title,
+		"Raw":        note.Content,
+		"ID":         note.ID,
+		"NotebookID": note.NotebookID,
+		"Notebooks":  notebooks,
+		"TitleError": "", "ContentError": "",
+	})
 }
 
 func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
 	userID, ok := s.currentUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, s.t(r, "error.unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
@@ -584,39 +632,34 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	content := r.FormValue("content")
 	notebookID := r.FormValue("notebook_id")
 	if title == "" || content == "" {
-		data := struct {
-			Title        string
-			Raw          string
-			NotebookID   string
-			TitleError   string
-			ContentError string
-			Notebooks    []database.Notebook
-		}{
-			Title:      title,
-			Raw:        content,
-			NotebookID: notebookID,
-		}
+		titleErr, contentErr := "", ""
 		if title == "" {
-			data.TitleError = "Title is required"
+			titleErr = "Title is required"
 		}
 		if content == "" {
-			data.ContentError = "Content is required"
+			contentErr = "Content is required"
 		}
+		var notebooks []database.Notebook
 		tempDB, err := s.DBManager.OpenUserDB(userID)
 		if err == nil {
 			defer tempDB.Close()
-			notebooks, _ := s.DBManager.ListNotebooks(tempDB)
-			data.Notebooks = notebooks
+			notebooks, _ = s.DBManager.ListNotebooks(tempDB)
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		s.Templates.ExecuteTemplate(w, "note_edit_fragment", data)
+		s.renderFragment(w, r, "note_edit_fragment", map[string]interface{}{
+			"Title":        title,
+			"Raw":          content,
+			"NotebookID":   notebookID,
+			"TitleError":   titleErr,
+			"ContentError": contentErr,
+			"Notebooks":    notebooks,
+		})
 		return
 	}
 
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("ViewNoteUpdateHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -624,11 +667,11 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	note, err := s.DBManager.GetNoteByTitle(db, originalTitle)
 	if err != nil {
 		log.Printf("ViewNoteUpdateHandler: GetNoteByTitle (original): %v", err)
-		http.Error(w, "unable to find note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.note_not_found"), http.StatusInternalServerError)
 		return
 	}
 	if note == nil {
-		http.Error(w, "note not found", http.StatusNotFound)
+		http.Error(w, s.t(r, "error.note_not_found"), http.StatusNotFound)
 		return
 	}
 
@@ -636,11 +679,11 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		existing, err := s.DBManager.GetNoteByTitle(db, title)
 		if err != nil {
 			log.Printf("ViewNoteUpdateHandler: GetNoteByTitle (conflict): %v", err)
-			http.Error(w, "unable to check existing title", http.StatusInternalServerError)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
 		if existing != nil {
-			http.Error(w, "note title already exists", http.StatusConflict)
+			http.Error(w, s.t(r, "error.note_title_conflict"), http.StatusConflict)
 			return
 		}
 	}
@@ -650,7 +693,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	note.NotebookID = notebookID
 	if err := s.DBManager.UpdateNote(db, *note); err != nil {
 		log.Printf("ViewNoteUpdateHandler: UpdateNote: %v", err)
-		http.Error(w, "unable to update note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 
@@ -671,9 +714,9 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	tags := markup.ParseTags(content)
 	s.DBManager.InsertNoteTags(db, note.ID, tags)
 
-	if err := s.renderNoteViewFragment(w, note, db); err != nil {
+	if err := s.renderNoteViewFragment(w, r, note, db); err != nil {
 		log.Printf("ViewNoteUpdateHandler: renderNoteViewFragment: %v", err)
-		http.Error(w, "unable to render updated note", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.render_failed"), http.StatusInternalServerError)
 		return
 	}
 }
@@ -681,7 +724,7 @@ func (s *Server) ViewNoteUpdateHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := s.currentUserID(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, s.t(r, "error.unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
@@ -695,7 +738,7 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := s.DBManager.OpenUserDB(userID)
 	if err != nil {
 		log.Printf("SearchHandler: OpenUserDB: %v", err)
-		http.Error(w, "unable to open user database", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
@@ -703,7 +746,7 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	results, err := s.DBManager.SearchNotes(db, q)
 	if err != nil {
 		log.Printf("SearchHandler: SearchNotes: %v", err)
-		http.Error(w, "unable to search notes", http.StatusInternalServerError)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
 

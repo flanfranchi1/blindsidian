@@ -29,16 +29,16 @@
 {{/* ── site-header: authenticated pages ── */}}
 {{define "site-header"}}
 <header class="site-header">
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <a class="skip-link" href="#main-content">{{index .T "nav.skip_link"}}</a>
   <div class="site-header__inner">
-    <a href="/" class="site-logo" aria-label="Notty — go to home">
+    <a href="/" class="site-logo" aria-label="{{index .T "nav.home_label"}}">
       {{template "logo-icon" .}}
       <span class="site-logo__wordmark">notty</span>
     </a>
-    <nav class="site-nav" aria-label="Main navigation">
+    <nav class="site-nav" aria-label="{{index .T "nav.main_label"}}">
       <ul role="list">
-        <li><a href="/notes">Notes</a></li>
-        <li><a href="/logout">Log out</a></li>
+        <li><a href="/notes">{{index .T "nav.notes"}}</a></li>
+        <li><a href="/logout">{{index .T "nav.logout"}}</a></li>
       </ul>
     </nav>
   </div>
@@ -48,9 +48,9 @@
 {{/* ── site-header-guest: unauthenticated pages ── */}}
 {{define "site-header-guest"}}
 <header class="site-header">
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <a class="skip-link" href="#main-content">{{index .T "nav.skip_link"}}</a>
   <div class="site-header__inner">
-    <a href="/" class="site-logo" aria-label="Notty — go to home">
+    <a href="/" class="site-logo" aria-label="{{index .T "nav.home_label"}}">
       {{template "logo-icon" .}}
       <span class="site-logo__wordmark">notty</span>
     </a>
@@ -61,7 +61,7 @@
 {{/* ── site-footer ── */}}
 {{define "site-footer"}}
 <footer class="site-footer">
-  <p>notty — your notes, plainly.</p>
+  <p>{{index .T "footer.tagline"}}</p>
 </footer>
 {{end}}
 

@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{.Locale}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{.Title}} — notty</title>
   {{template "head-assets" .}}
 </head>
-<body>
+<body
+  data-msg-editing="{{index .T "note.editing_mode"}}"
+  data-msg-viewing="{{index .T "note.view_mode"}}">
   {{template "site-header" .}}
   <div id="system-status" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
   <main id="main-content" class="page-wrapper">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/notes">← All notes</a>
+    <nav class="breadcrumb" aria-label="{{index .T "nav.breadcrumb_label"}}">
+      <a href="/notes">← {{index .T "notes.all_notes"}}</a>
       <span aria-hidden="true">/</span>
       <span aria-current="page">{{.Title}}</span>
     </nav>
@@ -33,13 +35,13 @@
         var textarea = document.getElementById('note-content-textarea');
         if (textarea) {
           textarea.focus();
-          if (statusEl) statusEl.textContent = 'Editing mode active.';
+          if (statusEl) statusEl.textContent = document.body.dataset.msgEditing;
           return;
         }
         var editBtn = document.getElementById('edit-button');
         if (editBtn) {
           editBtn.focus();
-          if (statusEl) statusEl.textContent = 'View mode active.';
+          if (statusEl) statusEl.textContent = document.body.dataset.msgViewing;
         }
       }, 80);
     });

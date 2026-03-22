@@ -23,6 +23,102 @@ func setupTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func setupSystemTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatalf("Failed to open system test database: %v", err)
+	}
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`)
+	if err != nil {
+		t.Fatalf("Failed to create users table: %v", err)
+	}
+	return db
+}
+
+func TestCreateSystemUser(t *testing.T) {
+	db := setupSystemTestDB(t)
+	defer db.Close()
+
+	manager := &DatabaseManager{}
+	user := User{ID: "user-1", Email: "alice@example.com", PasswordHash: "hash1"}
+
+	if err := manager.CreateSystemUser(db, user); err != nil {
+		t.Fatalf("CreateSystemUser failed: %v", err)
+	}
+
+	got, err := manager.GetUserByEmail(db, user.Email)
+	if err != nil {
+		t.Fatalf("GetUserByEmail failed: %v", err)
+	}
+	if got == nil {
+		t.Fatal("Expected user, got nil")
+	}
+	if got.ID != user.ID || got.Email != user.Email || got.PasswordHash != user.PasswordHash {
+		t.Errorf("User mismatch: got %+v, want %+v", got, user)
+	}
+}
+
+func TestGetUserByEmail_NotFound(t *testing.T) {
+	db := setupSystemTestDB(t)
+	defer db.Close()
+
+	manager := &DatabaseManager{}
+
+	got, err := manager.GetUserByEmail(db, "nobody@example.com")
+	if err != nil {
+		t.Fatalf("GetUserByEmail failed: %v", err)
+	}
+	if got != nil {
+		t.Errorf("Expected nil for unknown email, got %+v", got)
+	}
+}
+
+func TestUpdateUserPassword(t *testing.T) {
+	db := setupSystemTestDB(t)
+	defer db.Close()
+
+	manager := &DatabaseManager{}
+	user := User{ID: "user-2", Email: "bob@example.com", PasswordHash: "old-hash"}
+
+	if err := manager.CreateSystemUser(db, user); err != nil {
+		t.Fatalf("CreateSystemUser failed: %v", err)
+	}
+
+	newHash := "new-hash"
+	if err := manager.UpdateUserPassword(db, user.ID, newHash); err != nil {
+		t.Fatalf("UpdateUserPassword failed: %v", err)
+	}
+
+	got, err := manager.GetUserByEmail(db, user.Email)
+	if err != nil {
+		t.Fatalf("GetUserByEmail after update failed: %v", err)
+	}
+	if got == nil {
+		t.Fatal("Expected user after update, got nil")
+	}
+	if got.PasswordHash != newHash {
+		t.Errorf("PasswordHash = %q, want %q", got.PasswordHash, newHash)
+	}
+}
+
+func TestUpdateUserPassword_UnknownUser(t *testing.T) {
+	db := setupSystemTestDB(t)
+	defer db.Close()
+
+	manager := &DatabaseManager{}
+
+	// Should not error even when no row is matched
+	if err := manager.UpdateUserPassword(db, "ghost-id", "some-hash"); err != nil {
+		t.Fatalf("UpdateUserPassword returned unexpected error for unknown user: %v", err)
+	}
+}
+
 func TestCreateNoteAndGetNoteByID(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
