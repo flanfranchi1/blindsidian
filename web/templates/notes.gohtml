@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{if .IsInbox}}{{index .T "notes.inbox"}} — {{else if .Notebook}}{{.Notebook.Name}} — {{end}}{{index .T "notes.page_title"}}</title>
+  <title>{{if .IsInbox}}{{index .T "notes.inbox"}} — {{else if .IsTagView}}#{{.ActiveTag}} — {{else if .Notebook}}{{.Notebook.Name}} — {{end}}{{index .T "notes.page_title"}}</title>
   {{template "head-assets" .}}
 </head>
 <body class="workspace-page"
@@ -30,7 +30,7 @@
       <div class="workspace-main-inner">
 
         <h1 class="page-heading">
-          {{if .IsInbox}}{{index .T "notes.inbox"}}{{else if .Notebook}}{{.Notebook.Name}}{{else}}{{index .T "notes.heading"}}{{end}}
+          {{if .IsInbox}}{{index .T "notes.inbox"}}{{else if .IsTagView}}{{index .T "tags.page_title"}} #{{.ActiveTag}}{{else if .Notebook}}{{.Notebook.Name}}{{else}}{{index .T "notes.heading"}}{{end}}
         </h1>
 
         <!-- ── Search ── -->
@@ -96,16 +96,16 @@
         <!-- ── Notes list ── -->
         <section aria-labelledby="notes-list-heading">
           <h2 id="notes-list-heading">
-            {{if .IsInbox}}{{index .T "notes.inbox"}}{{else}}{{index .T "notes.all_notes"}}{{end}}
+            {{if .IsInbox}}{{index .T "notes.inbox"}}{{else if .IsTagView}}#{{.ActiveTag}}{{else}}{{index .T "notes.all_notes"}}{{end}}
           </h2>
           {{if .Notes}}
           <ul class="notes-list" id="notes-list" role="list">
             {{range .Notes}}
-            {{template "note_item_fragment" .}}
+            {{template "note_item_fragment" (dict "ID" .ID "Title" .Title "UpdatedAt" .UpdatedAt "T" $.T)}}
             {{end}}
           </ul>
           {{else}}
-          <p>{{if .IsInbox}}{{index .T "notes.inbox_empty"}}{{else}}{{index .T "notes.empty_state"}}{{end}}</p>
+          <p>{{if .IsInbox}}{{index .T "notes.inbox_empty"}}{{else if .IsTagView}}{{index .T "tags.empty_state"}}{{else}}{{index .T "notes.empty_state"}}{{end}}</p>
           {{end}}
         </section>
 
@@ -220,6 +220,23 @@
         </ul>
       </section>
 
+      {{if .AllTags}}
+      <!-- ── Tags section ── -->
+      <section class="sidebar-section sidebar-tags" aria-labelledby="tags-section-heading">
+        <details {{if .IsTagView}}open{{end}}>
+          <summary class="sidebar-heading" id="tags-section-heading">{{index .T "sidebar.tags_heading"}}</summary>
+          <ul class="sidebar-tags__list" role="list">
+            {{range .AllTags}}
+            <li>
+              <a href="/tags/{{.}}"
+                 {{if and $.IsTagView (eq $.ActiveTag .)}}aria-current="page"{{end}}>#{{.}}</a>
+            </li>
+            {{end}}
+          </ul>
+        </details>
+      </section>
+      {{end}}
+
     </nav><!-- /.workspace-sidebar -->
 
   </div><!-- /.workspace -->
@@ -243,6 +260,32 @@
         }
         if (statusEl) statusEl.textContent = document.body.dataset.msgListUpdated;
       }, 80);
+    });
+
+    /*
+      ToC smooth scroll — required because .workspace-main is its own
+      overflow-y: auto scroll container.  Native anchor navigation scrolls
+      the viewport; we intercept sidebar ToC clicks and call
+      scrollIntoView on the target heading inside the container instead.
+    */
+    document.addEventListener('click', function (ev) {
+      var link = ev.target.closest('.sidebar-toc a');
+      if (!link) return;
+      var hash = link.getAttribute('href');
+      if (!hash || hash.charAt(0) !== '#') return;
+      var target = document.getElementById(hash.slice(1));
+      if (!target) return;
+      ev.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      /* Keep the URL hash in sync for bookmarkability / back-navigation. */
+      if (window.history && window.history.pushState) {
+        window.history.pushState(null, '', hash);
+      }
+      /* Move focus to the heading so keyboard users land on the right spot. */
+      if (!target.hasAttribute('tabindex')) {
+        target.setAttribute('tabindex', '-1');
+      }
+      target.focus({ preventScroll: true });
     });
   </script>
 </body>

@@ -110,5 +110,9 @@
   "notes.inbox_empty": "Sua Caixa de Entrada está vazia. As notas capturadas sem selecionar um caderno aparecerão aqui.",
   "notebook.toc_heading": "Neste caderno",
   "notebook.index_heading": "Visão geral do caderno",
-  "notebook.edit_index_note": "Editar visão geral"
+  "notebook.edit_index_note": "Editar visão geral",
+  "note.tags_label": "Marcado como",
+  "sidebar.tags_heading": "Tags",
+  "tags.page_title": "Notas marcadas",
+  "tags.empty_state": "Nenhuma nota com esta tag."
 }

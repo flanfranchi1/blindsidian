@@ -30,5 +30,13 @@
     </ul>
   </aside>
   {{end}}
+
+  {{if .Tags}}
+  <footer class="note-tags" aria-label="{{index .T "note.tags_label"}}">
+    <span class="sr-only">{{index .T "note.tags_label"}}: </span>
+    {{range .Tags}}<a href="/tags/{{.}}" class="note-tag">#{{.}}</a>
+    {{end}}
+  </footer>
+  {{end}}
 </article>
 {{end}}

@@ -166,6 +166,7 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inboxCount, _ := s.DBManager.CountInboxNotes(db)
+	allTags, _ := s.DBManager.ListAllTags(db)
 
 	data := map[string]interface{}{
 		"Notes":      rendered,
@@ -173,6 +174,7 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 		"Notebook":   notebook,
 		"InboxCount": inboxCount,
 		"ToCEntries": tocEntries,
+		"AllTags":    allTags,
 	}
 	if indexNoteHTML != "" {
 		data["IndexNote"] = map[string]interface{}{

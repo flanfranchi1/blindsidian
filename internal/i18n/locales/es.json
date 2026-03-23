@@ -110,5 +110,9 @@
   "notes.inbox_empty": "Tu Bandeja de entrada está vacía. Las notas que captures sin seleccionar una libreta aparecerán aquí.",
   "notebook.toc_heading": "En este cuaderno",
   "notebook.index_heading": "Descripción del cuaderno",
-  "notebook.edit_index_note": "Editar descripción"
+  "notebook.edit_index_note": "Editar descripción",
+  "note.tags_label": "Etiquetado como",
+  "sidebar.tags_heading": "Etiquetas",
+  "tags.page_title": "Notas etiquetadas",
+  "tags.empty_state": "No hay notas con esta etiqueta."
 }

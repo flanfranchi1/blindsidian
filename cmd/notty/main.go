@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -55,7 +56,28 @@ func main() {
 		log.Fatalf("failed to load i18n bundle: %v", err)
 	}
 
-	templates := template.Must(template.New("pages").ParseGlob("./web/templates/*.gohtml"))
+	// dict builds a map[string]interface{} from alternating key/value pairs.
+	// This is required so that templates can forward both note data AND the
+	// outer translation map ($.T) when calling sub-templates from inside a
+	// {{range}} block — range changes the context to the range element and
+	// without dict there is no clean way to pass the T map alongside it.
+	funcMap := template.FuncMap{
+		"dict": func(pairs ...interface{}) (map[string]interface{}, error) {
+			if len(pairs)%2 != 0 {
+				return nil, fmt.Errorf("dict requires an even number of arguments, got %d", len(pairs))
+			}
+			m := make(map[string]interface{}, len(pairs)/2)
+			for i := 0; i < len(pairs); i += 2 {
+				key, ok := pairs[i].(string)
+				if !ok {
+					return nil, fmt.Errorf("dict key at position %d must be a string", i)
+				}
+				m[key] = pairs[i+1]
+			}
+			return m, nil
+		},
+	}
+	templates := template.Must(template.New("pages").Funcs(funcMap).ParseGlob("./web/templates/*.gohtml"))
 
 	server := &handlers.Server{
 		DBManager:         mgr,
@@ -84,6 +106,7 @@ func main() {
 	mux.HandleFunc("/notes/view/update", server.ViewNoteUpdateHandler)
 	mux.HandleFunc("/notes/", server.NoteActionHandler)
 	mux.HandleFunc("/search", server.SearchHandler)
+	mux.HandleFunc("/tags/", server.TagsHandler)
 	mux.HandleFunc("/logout", server.LogoutHandler)
 	mux.HandleFunc("/forgot-password", server.ForgotPasswordHandler)
 

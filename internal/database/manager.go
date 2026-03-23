@@ -579,6 +579,62 @@ func (m *DatabaseManager) GetNotebookIndexNote(db *sql.DB, notebookID string) (*
 	return note, nil
 }
 
+func (m *DatabaseManager) GetTagsByNoteID(db *sql.DB, noteID string) ([]string, error) {
+	rows, err := db.Query(`SELECT tag FROM note_tags WHERE note_id = ? ORDER BY tag ASC`, noteID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var tags []string
+	for rows.Next() {
+		var tag string
+		if err := rows.Scan(&tag); err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, rows.Err()
+}
+
+func (m *DatabaseManager) ListAllTags(db *sql.DB) ([]string, error) {
+	rows, err := db.Query(`SELECT DISTINCT tag FROM note_tags ORDER BY tag ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var tags []string
+	for rows.Next() {
+		var tag string
+		if err := rows.Scan(&tag); err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, rows.Err()
+}
+
+func (m *DatabaseManager) GetNotesByTag(db *sql.DB, tag string) ([]Note, error) {
+	rows, err := db.Query(`
+		SELECT n.id, n.title, n.content, n.notebook_id, n.updated_at
+		FROM notes n
+		JOIN note_tags t ON n.id = t.note_id
+		WHERE t.tag = ?
+		ORDER BY n.updated_at DESC`, tag)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var notes []Note
+	for rows.Next() {
+		var n Note
+		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.NotebookID, &n.UpdatedAt); err != nil {
+			return nil, err
+		}
+		notes = append(notes, n)
+	}
+	return notes, rows.Err()
+}
+
 // SeedTutorial populates a new user's database with a "Tutorial" notebook
 // containing three notes that showcase the Notty Markdown parser features.
 // translations is the flat key→value map for the user's locale, obtained via

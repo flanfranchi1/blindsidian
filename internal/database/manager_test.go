@@ -424,3 +424,263 @@ func TestGetNotesByNotebookID_IsolationAndIndex(t *testing.T) {
 		t.Fatalf("Expected query plan to use idx_notes_notebook_id")
 	}
 }
+
+func TestGetTagsByNoteID(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	manager := &DatabaseManager{}
+
+	if err := manager.CreateNote(db, Note{ID: "note-a", Title: "A"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.InsertNoteTags(db, "note-a", []string{"go", "testing", "database"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+
+	tags, err := manager.GetTagsByNoteID(db, "note-a")
+	if err != nil {
+		t.Fatalf("GetTagsByNoteID: %v", err)
+	}
+	// Results must be sorted alphabetically
+	expected := []string{"database", "go", "testing"}
+	if !reflect.DeepEqual(tags, expected) {
+		t.Fatalf("Expected %v, got %v", expected, tags)
+	}
+
+	// Note with no tags returns nil slice, no error
+	if err := manager.CreateNote(db, Note{ID: "note-b", Title: "B"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	empty, err := manager.GetTagsByNoteID(db, "note-b")
+	if err != nil {
+		t.Fatalf("GetTagsByNoteID (no tags): %v", err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("Expected empty slice for note with no tags, got %v", empty)
+	}
+}
+
+func TestListAllTags(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	manager := &DatabaseManager{}
+
+	// Empty DB returns empty, no error
+	tags, err := manager.ListAllTags(db)
+	if err != nil {
+		t.Fatalf("ListAllTags on empty db: %v", err)
+	}
+	if len(tags) != 0 {
+		t.Fatalf("Expected no tags, got %v", tags)
+	}
+
+	if err := manager.CreateNote(db, Note{ID: "n1", Title: "N1"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.CreateNote(db, Note{ID: "n2", Title: "N2"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	// Same tag on two notes must appear only once (DISTINCT)
+	if err := manager.InsertNoteTags(db, "n1", []string{"alpha", "beta"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+	if err := manager.InsertNoteTags(db, "n2", []string{"beta", "gamma"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+
+	tags, err = manager.ListAllTags(db)
+	if err != nil {
+		t.Fatalf("ListAllTags: %v", err)
+	}
+	expected := []string{"alpha", "beta", "gamma"}
+	if !reflect.DeepEqual(tags, expected) {
+		t.Fatalf("Expected %v, got %v", expected, tags)
+	}
+}
+
+func TestGetNotesByTag(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	manager := &DatabaseManager{}
+
+	if err := manager.CreateNote(db, Note{ID: "x1", Title: "X1", NotebookID: "nb1"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.CreateNote(db, Note{ID: "x2", Title: "X2", NotebookID: ""}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.CreateNote(db, Note{ID: "x3", Title: "X3", NotebookID: "nb1"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.InsertNoteTags(db, "x1", []string{"mytag"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+	if err := manager.InsertNoteTags(db, "x3", []string{"mytag", "other"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+
+	notes, err := manager.GetNotesByTag(db, "mytag")
+	if err != nil {
+		t.Fatalf("GetNotesByTag: %v", err)
+	}
+	if len(notes) != 2 {
+		t.Fatalf("Expected 2 notes with tag 'mytag', got %d: %v", len(notes), notes)
+	}
+
+	// Verify note x2 (untagged) is not included
+	for _, n := range notes {
+		if n.ID == "x2" {
+			t.Fatal("Note x2 should not appear in tag results")
+		}
+	}
+
+	// Unknown tag returns empty slice, no error
+	none, err := manager.GetNotesByTag(db, "nonexistent")
+	if err != nil {
+		t.Fatalf("GetNotesByTag (unknown tag): %v", err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("Expected no notes for unknown tag, got %v", none)
+	}
+}
+
+func TestListInboxNotes(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	manager := &DatabaseManager{}
+
+	// Notes without a notebook_id land in the inbox.
+	if err := manager.CreateNote(db, Note{ID: "i1", Title: "Inbox 1"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.CreateNote(db, Note{ID: "i2", Title: "Inbox 2", NotebookID: ""}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	// Note assigned to a notebook must NOT appear in the inbox.
+	if err := manager.CreateNote(db, Note{ID: "n1", Title: "Notebook Note", NotebookID: "nb-1"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+
+	notes, err := manager.ListInboxNotes(db)
+	if err != nil {
+		t.Fatalf("ListInboxNotes: %v", err)
+	}
+	if len(notes) != 2 {
+		t.Fatalf("Expected 2 inbox notes, got %d: %v", len(notes), notes)
+	}
+	for _, n := range notes {
+		if n.NotebookID != "" {
+			t.Errorf("Inbox note %q has NotebookID %q, expected empty", n.ID, n.NotebookID)
+		}
+	}
+
+	// Notebook note must not appear.
+	for _, n := range notes {
+		if n.ID == "n1" {
+			t.Fatal("Notebook-assigned note should not appear in inbox")
+		}
+	}
+}
+
+func TestCountInboxNotes(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	manager := &DatabaseManager{}
+
+	// Empty database: count must be 0.
+	count, err := manager.CountInboxNotes(db)
+	if err != nil {
+		t.Fatalf("CountInboxNotes on empty db: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("Expected 0 inbox notes, got %d", count)
+	}
+
+	// One inbox note (no notebook_id).
+	if err := manager.CreateNote(db, Note{ID: "c1", Title: "Capture"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	count, err = manager.CountInboxNotes(db)
+	if err != nil {
+		t.Fatalf("CountInboxNotes: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("Expected 1 inbox note, got %d", count)
+	}
+
+	// Assigning c1 to a notebook must reduce count to 0.
+	if err := manager.UpdateNote(db, Note{ID: "c1", Title: "Capture", NotebookID: "nb-x"}); err != nil {
+		t.Fatalf("UpdateNote: %v", err)
+	}
+	count, err = manager.CountInboxNotes(db)
+	if err != nil {
+		t.Fatalf("CountInboxNotes after update: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("Expected 0 inbox notes after assignment, got %d", count)
+	}
+}
+
+func TestGetNotebookIndexNote(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	manager := &DatabaseManager{}
+
+	notebookID := "toc-nb"
+
+	// No notes yet — must return nil without error.
+	idx, err := manager.GetNotebookIndexNote(db, notebookID)
+	if err != nil {
+		t.Fatalf("GetNotebookIndexNote (empty): %v", err)
+	}
+	if idx != nil {
+		t.Fatalf("Expected nil when no index note exists, got %+v", idx)
+	}
+
+	// Create two notes in the notebook — neither tagged #index yet.
+	if err := manager.CreateNote(db, Note{ID: "p1", Title: "Plain 1", NotebookID: notebookID}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.CreateNote(db, Note{ID: "p2", Title: "Plain 2", NotebookID: notebookID}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+
+	// Still no index note.
+	idx, err = manager.GetNotebookIndexNote(db, notebookID)
+	if err != nil {
+		t.Fatalf("GetNotebookIndexNote (no index tag): %v", err)
+	}
+	if idx != nil {
+		t.Fatalf("Expected nil when no note has #index tag, got %+v", idx)
+	}
+
+	// Tag p1 with #index — it becomes the index note for this notebook.
+	if err := manager.InsertNoteTags(db, "p1", []string{"index"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+	idx, err = manager.GetNotebookIndexNote(db, notebookID)
+	if err != nil {
+		t.Fatalf("GetNotebookIndexNote: %v", err)
+	}
+	if idx == nil {
+		t.Fatal("Expected index note, got nil")
+	}
+	if idx.ID != "p1" {
+		t.Errorf("Expected index note ID p1, got %q", idx.ID)
+	}
+
+	// A note from a DIFFERENT notebook tagged #index must not be returned.
+	if err := manager.CreateNote(db, Note{ID: "other", Title: "Other NB Index", NotebookID: "other-nb"}); err != nil {
+		t.Fatalf("CreateNote: %v", err)
+	}
+	if err := manager.InsertNoteTags(db, "other", []string{"index"}); err != nil {
+		t.Fatalf("InsertNoteTags: %v", err)
+	}
+	idx, err = manager.GetNotebookIndexNote(db, notebookID)
+	if err != nil {
+		t.Fatalf("GetNotebookIndexNote (isolation): %v", err)
+	}
+	if idx == nil || idx.ID != "p1" {
+		t.Errorf("Expected index note p1 after adding index note for different notebook, got %v", idx)
+	}
+}

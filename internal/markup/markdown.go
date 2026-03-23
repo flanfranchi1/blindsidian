@@ -128,10 +128,14 @@ func ParseWikiLinks(content string) []string {
 	return titles
 }
 
-var tagRegex = regexp.MustCompile(`#([a-zA-Z0-9_]+)`)
+var (
+	tagRegex         = regexp.MustCompile(`#([a-zA-Z][a-zA-Z0-9_]*)`)
+	atxHeadingLineRe = regexp.MustCompile(`(?m)^#{1,6}[ \t].*$`)
+)
 
 func ParseTags(content string) []string {
-	matches := tagRegex.FindAllStringSubmatch(content, -1)
+	stripped := atxHeadingLineRe.ReplaceAllString(content, "")
+	matches := tagRegex.FindAllStringSubmatch(stripped, -1)
 	tagSet := make(map[string]bool)
 	for _, match := range matches {
 		if len(match) > 1 {

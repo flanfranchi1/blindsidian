@@ -2,13 +2,11 @@
   "nav.notes": "Notes",
   "nav.logout": "Log out",
   "nav.home_label": "Notty — go to home",
-
   "home.title": "notty — your notes, plainly",
   "home.tagline": "A minimal, accessible place for your notes.",
   "home.tagline_sub": "Write in Markdown. Link ideas. Stay focused.",
   "home.cta_signup": "Create account",
   "home.cta_login": "Log in",
-
   "auth.email": "Email",
   "auth.password": "Password",
   "auth.signup_title": "Create account",
@@ -20,7 +18,6 @@
   "auth.forgot_password": "Forgot password?",
   "auth.forgot_password_title": "Reset password",
   "auth.forgot_password_submit": "Send reset link",
-
   "notes.page_title": "Notes — notty",
   "notes.heading": "Your notes",
   "notes.new_note": "New note",
@@ -37,25 +34,22 @@
   "notes.notebooks_heading": "Notebooks",
   "notes.all_notes": "All notes",
   "notes.updated_at": "Updated",
-
   "note.view_title_suffix": "— notty",
   "note.backlinks_heading": "Linked from",
   "note.edit_note": "Edit note",
-
   "error.required_fields": "Email and password are required.",
   "error.email_taken": "Email is already registered.",
   "error.invalid_credentials": "Invalid email or password.",
-
   "footer.tagline": "notty — your notes, plainly.",
-
   "tutorial.notebook.name": "Tutorial",
   "tutorial.note1.title": "Basic Formatting",
   "tutorial.note2.title": "Advanced Elements",
   "tutorial.note3.title": "Interconnectivity",
-
   "tutorial.markdown.formatting": "# Basic Formatting\n\nWelcome to **notty**! This note demonstrates the *basic formatting* features of the Markdown parser.\n\n## Bold and Italics\n\nUse `**double asterisks**` for **bold**, `*single asterisks*` for *italic*, and `***both***` for ***bold and italic*** text.\n\n## Headers\n\nHeaders are created with `#` symbols:\n\n# H1 — Main Title\n## H2 — Section\n### H3 — Subsection\n\n## Task Lists\n\nCheckboxes keep track of your progress:\n\n- [x] Create a notty account\n- [x] Read this tutorial note\n- [ ] Write your first note\n- [ ] Explore [[Advanced Elements]]\n\n#tutorial #formatting",
-
   "tutorial.markdown.advanced": "# Advanced Elements\n\nThis note showcases external links, tables, and images.\n\n## External Links\n\nVisit the [Markdown Guide](https://www.markdownguide.org) for a comprehensive reference.\n\n## Table\n\nA simple feature comparison:\n\n| Feature | Plain Text | Markdown |\n| --- | --- | --- |\n| Bold / Italics | No | Yes |\n| Headings | No | Yes |\n| Task Lists | No | Yes |\n| Wikilinks | No | Yes |\n\n## Image\n\n![A wide mountain landscape with snow-capped peaks reflected in a calm alpine lake](https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800)\n\nContinue to [[Interconnectivity]] to learn about linking notes together.\n\n#tutorial #advanced",
-
-  "tutorial.markdown.wikilinks": "# Interconnectivity\n\nOne of notty's most powerful features is **Wikilinks** — a simple syntax for connecting notes into a personal knowledge network.\n\n## How Wikilinks Work\n\nWrap any note title in double square brackets:\n\n```\n[[Note Title]]\n```\n\nnotty resolves the link automatically if a note with that exact title exists.\n\n## Links to the Other Tutorial Notes\n\n- [[Basic Formatting]] — covers bold, italics, headers, and task lists.\n- [[Advanced Elements]] — covers external links, tables, and images.\n\n## Ghost Links\n\nIf you write `[[A Note That Does Not Exist Yet]]`, notty marks it as a *ghost link*. Clicking it opens a new-note form pre-filled with that title — a great way to grow your knowledge base organically.\n\n#tutorial #wikilinks"
+  "tutorial.markdown.wikilinks": "# Interconnectivity\n\nOne of notty's most powerful features is **Wikilinks** — a simple syntax for connecting notes into a personal knowledge network.\n\n## How Wikilinks Work\n\nWrap any note title in double square brackets:\n\n```\n[[Note Title]]\n```\n\nnotty resolves the link automatically if a note with that exact title exists.\n\n## Links to the Other Tutorial Notes\n\n- [[Basic Formatting]] — covers bold, italics, headers, and task lists.\n- [[Advanced Elements]] — covers external links, tables, and images.\n\n## Ghost Links\n\nIf you write `[[A Note That Does Not Exist Yet]]`, notty marks it as a *ghost link*. Clicking it opens a new-note form pre-filled with that title — a great way to grow your knowledge base organically.\n\n#tutorial #wikilinks",
+  "note.tags_label": "Tagged as",
+  "sidebar.tags_heading": "Tags",
+  "tags.page_title": "Notes tagged",
+  "tags.empty_state": "No notes with this tag."
 }

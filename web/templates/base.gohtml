@@ -116,7 +116,7 @@
         <select id="dlg-note-notebook" name="notebook_id">
           <option value="">{{index .T "notes.none"}}</option>
           {{range .Notebooks}}
-          <option value="{{.ID}}">{{.Name}}</option>
+          <option value="{{.ID}}" {{if and $.Notebook (eq $.Notebook.ID .ID)}}selected{{end}}>{{.Name}}</option>
           {{end}}
         </select>
       </div>

@@ -116,7 +116,8 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 		notebooks = []database.Notebook{}
 	}
 	inboxCount, _ := s.DBManager.CountInboxNotes(db)
-	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks, "InboxCount": inboxCount})
+	allTags, _ := s.DBManager.ListAllTags(db)
+	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks, "InboxCount": inboxCount, "AllTags": allTags})
 }
 
 // InboxHandler serves GET /inbox — all notes that are not assigned to any
@@ -187,11 +188,13 @@ func (s *Server) InboxHandler(w http.ResponseWriter, r *http.Request) {
 		notebooks = []database.Notebook{}
 	}
 	inboxCount := len(rendered)
+	allTags, _ := s.DBManager.ListAllTags(db)
 	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{
 		"Notes":      rendered,
 		"Notebooks":  notebooks,
 		"InboxCount": inboxCount,
 		"IsInbox":    true,
+		"AllTags":    allTags,
 	})
 }
 
@@ -378,7 +381,8 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 			return
 		}
-		s.RenderTemplate(w, r, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+		tags, _ := s.DBManager.GetTagsByNoteID(db, noteID)
+		s.RenderTemplate(w, r, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID, "Tags": tags})
 		return
 	}
 	if len(parts) < 2 {
@@ -498,6 +502,15 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.isHTMXRequest(r) {
+			// If the request originated from the Inbox view and the note has just been
+			// assigned to a notebook, remove the item from the inbox list entirely.
+			currentURL := r.Header.Get("HX-Current-URL")
+			fromInbox := strings.Contains(currentURL, "/inbox")
+			if fromInbox && notebookID != "" {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.Header().Set("HX-Reswap", "delete")
+				return
+			}
 			s.renderFragment(w, r, "note_item_fragment", map[string]interface{}{"ID": note.ID, "Title": note.Title, "UpdatedAt": note.UpdatedAt, "RenderedHTML": template.HTML(htmlContent)})
 			return
 		}
@@ -670,7 +683,11 @@ func (s *Server) renderNoteViewFragment(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return err
 	}
-	s.renderFragment(w, r, "note_view_fragment", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+	tags, err := s.DBManager.GetTagsByNoteID(db, note.ID)
+	if err != nil {
+		tags = nil
+	}
+	s.renderFragment(w, r, "note_view_fragment", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID, "Tags": tags})
 	return nil
 }
 
@@ -736,7 +753,8 @@ func (s *Server) ViewNoteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
 		return
 	}
-	s.RenderTemplate(w, r, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID})
+	tags, _ := s.DBManager.GetTagsByNoteID(db, note.ID)
+	s.RenderTemplate(w, r, "noteview.gohtml", map[string]interface{}{"Title": note.Title, "Body": template.HTML(htmlContent), "Backlinks": backlinks, "ID": note.ID, "Tags": tags})
 }
 
 func (s *Server) ViewNoteEditHandler(w http.ResponseWriter, r *http.Request) {
@@ -914,6 +932,53 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
+	isCmdPalette := r.Header.Get("HX-Target") == "cmd-results"
+
+	if strings.HasPrefix(q, "#") {
+		tag := strings.ToLower(strings.TrimPrefix(q, "#"))
+		results, err := s.DBManager.GetNotesByTag(db, tag)
+		if err != nil {
+			log.Printf("SearchHandler: GetNotesByTag: %v", err)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
+			return
+		}
+		count := len(results)
+		announcement := fmt.Sprintf("%d result", count)
+		if count != 1 {
+			announcement += "s"
+		}
+		announcement += " found"
+		fmt.Fprintf(w, `<div id="search-announcer" class="sr-only" aria-live="polite" aria-atomic="true" hx-swap-oob="true">%s</div>`, html.EscapeString(announcement))
+		if count == 0 {
+			fmt.Fprint(w, "<p>No notes with this tag.</p>")
+			return
+		}
+		if isCmdPalette {
+			for i, n := range results {
+				itemURL := "/notes/view?title=" + url.QueryEscape(n.Title)
+				fmt.Fprintf(w,
+					`<li role="option" id="cmd-result-%d" aria-selected="false"><a href="%s">#%s &mdash; %s</a></li>`,
+					i, html.EscapeString(itemURL), html.EscapeString(tag), html.EscapeString(n.Title),
+				)
+			}
+		} else {
+			type searchItem struct {
+				Title string
+				URL   string
+			}
+			items := make([]searchItem, 0, count)
+			for _, n := range results {
+				items = append(items, searchItem{
+					Title: n.Title,
+					URL:   "/notes/view?title=" + url.QueryEscape(n.Title),
+				})
+			}
+			tmpl := template.Must(template.New("tagsearch").Parse(`<ul role="list">{{range .}}<li><a href="{{.URL}}">{{.Title}}</a></li>{{end}}</ul>`))
+			tmpl.Execute(w, items)
+		}
+		return
+	}
+
 	results, err := s.DBManager.SearchNotes(db, q)
 	if err != nil {
 		log.Printf("SearchHandler: SearchNotes: %v", err)
@@ -949,6 +1014,97 @@ func (s *Server) SearchHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	if isCmdPalette {
+		for i, item := range items {
+			fmt.Fprintf(w,
+				`<li role="option" id="cmd-result-%d" aria-selected="false"><a href="%s">%s</a></li>`,
+				i, html.EscapeString(item.URL), html.EscapeString(item.Title),
+			)
+		}
+		return
+	}
+
 	tmpl := template.Must(template.New("search").Parse(`<ul role="list">{{range .}}<li><a href="{{.URL}}">{{.Title}}</a>{{if .Snippet}}<br><small style="color:#666">{{.Snippet}}</small>{{end}}</li>{{end}}</ul>`))
 	tmpl.Execute(w, items)
+}
+
+// TagsHandler serves GET /tags/{tag} — lists all notes with that tag.
+func (s *Server) TagsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.currentUserID(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	tag := strings.ToLower(strings.TrimPrefix(r.URL.Path, "/tags/"))
+	tag = strings.TrimSuffix(tag, "/")
+
+	db, err := s.DBManager.OpenUserDB(userID)
+	if err != nil {
+		log.Printf("TagsHandler: OpenUserDB: %v", err)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	notes, err := s.DBManager.GetNotesByTag(db, tag)
+	if err != nil {
+		log.Printf("TagsHandler: GetNotesByTag: %v", err)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	type RenderNote struct {
+		ID           string
+		Title        string
+		Content      string
+		UpdatedAt    string
+		RenderedHTML template.HTML
+		NotebookID   string
+	}
+
+	noteResolver := func(title string) (string, bool, error) {
+		n, err := s.DBManager.GetNoteByTitle(db, title)
+		if err != nil {
+			return "", false, err
+		}
+		if n == nil {
+			return "", false, nil
+		}
+		return n.ID, true, nil
+	}
+
+	rendered := []RenderNote{}
+	for _, note := range notes {
+		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
+		if err != nil {
+			log.Printf("TagsHandler: RenderMarkdownWithWikiLinks: %v", err)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
+			return
+		}
+		rendered = append(rendered, RenderNote{
+			ID:           note.ID,
+			Title:        note.Title,
+			Content:      note.Content,
+			UpdatedAt:    note.UpdatedAt,
+			RenderedHTML: template.HTML(htmlContent),
+			NotebookID:   note.NotebookID,
+		})
+	}
+
+	notebooks, err := s.DBManager.ListNotebooks(db)
+	if err != nil {
+		notebooks = []database.Notebook{}
+	}
+	inboxCount, _ := s.DBManager.CountInboxNotes(db)
+	allTags, _ := s.DBManager.ListAllTags(db)
+
+	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{
+		"Notes":      rendered,
+		"Notebooks":  notebooks,
+		"InboxCount": inboxCount,
+		"AllTags":    allTags,
+		"IsTagView":  true,
+		"ActiveTag":  tag,
+	})
 }

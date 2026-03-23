@@ -110,5 +110,9 @@
   "notes.inbox_empty": "Your Inbox is empty. Notes you capture without selecting a notebook will appear here.",
   "notebook.toc_heading": "In this notebook",
   "notebook.index_heading": "Notebook overview",
-  "notebook.edit_index_note": "Edit overview"
+  "notebook.edit_index_note": "Edit overview",
+  "note.tags_label": "Tagged as",
+  "sidebar.tags_heading": "Tags",
+  "tags.page_title": "Notes tagged",
+  "tags.empty_state": "No notes with this tag."
 }
