@@ -1,59 +1,160 @@
 {{define "note_edit_fragment"}}
-<form hx-post="/notes/view/update"
-      hx-target="#note-display-area"
-      hx-swap="innerHTML"
-      aria-labelledby="edit-heading"
-      novalidate>
+<!--
+  WYSIWYM editor surface.
 
-  <h1 id="edit-heading">{{index .T "note.editing_prefix"}} {{.Title}}</h1>
+  Layout
+  ──────
+  .editor-surface
+    .editor-topbar          ← save status · metadata · split · done
+    .editor-layout          ← flex row; only one column by default
+      .editor-write-pane    ← native <textarea> (always accessible)
+      .editor-preview-pane  ← server-rendered HTML (shown in split mode)
 
-  <input type="hidden" name="original_title" value="{{.Title}}">
+  Auto-save
+  ─────────
+  HTMX fires POST /notes/{id}/autosave on every keystroke after 1 s of
+  inactivity and on notebook change.  The server responds with a tiny
+  <span class="save-status …"> element that replaces #editor-status.
+  The span is inside an aria-live="polite" region so screen readers
+  hear "Saved" without interrupting the user's flow.
 
-  <div class="form-group">
-    <label for="edit-title">{{index .T "notes.title_label"}}</label>
-    <input id="edit-title" name="title" type="text"
-           value="{{.Title}}" required
-           aria-describedby="edit-title-error">
-    <div id="edit-title-error" class="form-error"
-         role="alert" aria-live="assertive">{{.TitleError}}</div>
-  </div>
+  Title derivation
+  ────────────────
+  editor.js watches the textarea and copies the first `# Heading` line
+  into the hidden <input name="title"> before each auto-save.  The page
+  <title> and the breadcrumb in noteview.gohtml are updated accordingly.
 
-  <div class="form-group">
-    <label for="edit-notebook-select">{{index .T "notes.notebook_label"}}</label>
-    <select id="edit-notebook-select" name="notebook_id">
-      <option value="">{{index .T "notes.none"}}</option>
-      {{range .Notebooks}}
-      <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
-      {{end}}
-    </select>
-  </div>
+  Focus management
+  ────────────────
+  The <textarea> is a native control — no focus trap, fully operable by
+  keyboard only.  Tab moves out of the textarea normally (no override).
+  editor.js focuses the textarea on load.
+-->
+<div class="editor-surface" id="editor-surface"
+     data-note-id="{{.ID}}"
+     data-note-title="{{.Title}}">
 
-  <div class="form-group">
-    <label for="note-content-textarea">
-      {{index .T "notes.content_label"}} <span class="sr-only">({{index .T "notes.markdown_hint_sr"}})</span>
-    </label>
-    <span id="markdown-hint" class="sr-only">{{index .T "notes.markdown_hint_sr"}}. Wiki-links: [[{{index .T "notes.title_label"}}]].</span>
-    <textarea id="note-content-textarea"
-              name="content"
-              rows="24"
-              required
-              class="editor-textarea"
-              aria-describedby="markdown-hint edit-content-error">{{.Raw}}</textarea>
-    <span class="form-hint" aria-hidden="true">{{index .T "notes.markdown_hint"}}</span>
-    <div id="edit-content-error" class="form-error"
-         role="alert" aria-live="assertive">{{.ContentError}}</div>
-  </div>
+  <!--
+    The <form> wraps the full surface so that HTMX always has access to
+    every field (title, content, notebook_id) when it submits.
+    hx-trigger fires from two sources independently:
+      1. keyup on the textarea — debounced 1 s
+      2. change on the notebook select — immediate
+  -->
+  <form id="autosave-form"
+        hx-post="/notes/{{.ID}}/autosave"
+        hx-trigger="keyup changed delay:1000ms from:#editor-textarea,
+                    change from:#editor-notebook-select"
+        hx-target="#editor-status"
+        hx-swap="innerHTML"
+        hx-indicator="#save-spinner">
 
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary">{{index .T "notes.save"}}</button>
-    <button type="button"
-            class="btn btn-ghost"
-            hx-get="/notes/view?title={{.Title | urlquery}}"
-            hx-target="#note-display-area"
-            hx-swap="innerHTML"
-            aria-label="{{index .T "note.cancel_editing_aria"}}">
-      {{index .T "notes.cancel"}}
-    </button>
-  </div>
-</form>
+    <!-- Hidden fields updated by editor.js before each submit -->
+    <input type="hidden" id="autosave-title"      name="title"       value="{{.Title}}">
+    <input type="hidden" id="autosave-notebook-id" name="notebook_id" value="{{.NotebookID}}">
+
+    <!-- ── Editor topbar ── -->
+    <div class="editor-topbar" role="toolbar" aria-label="{{index .T "note.metadata_label"}}">
+
+      <!-- Save status (aria-live region) -->
+      <div id="editor-status" aria-live="polite" aria-atomic="true"
+           class="editor-status">
+        <span id="save-spinner" class="htmx-indicator save-spinner" aria-hidden="true">{{index .T "note.saving"}}</span>
+      </div><!-- /#editor-status -->
+
+      <div class="editor-topbar-actions">
+
+        <!--
+          Metadata details — the <select> is inside the <form> so it is
+          naturally included in every auto-save submission.
+          <details> / <summary> is natively keyboard operable.
+        -->
+        <details class="editor-meta-details" id="editor-meta">
+          <summary class="btn btn-ghost btn-sm"
+                   aria-label="{{index .T "note.metadata_label"}}">
+            <!-- vertical ellipsis icon -->
+            <svg aria-hidden="true" focusable="false"
+                 viewBox="0 0 20 20" fill="currentColor"
+                 width="1em" height="1em">
+              <circle cx="10" cy="4"  r="1.75"/>
+              <circle cx="10" cy="10" r="1.75"/>
+              <circle cx="10" cy="16" r="1.75"/>
+            </svg>
+          </summary>
+          <div class="editor-meta-popover">
+            <label for="editor-notebook-select">{{index .T "notes.notebook_label"}}</label>
+            <select id="editor-notebook-select" name="notebook_id">
+              <option value="">{{index .T "notes.none"}}</option>
+              {{range .Notebooks}}
+              <option value="{{.ID}}" {{if eq .ID $.NotebookID}}selected{{end}}>{{.Name}}</option>
+              {{end}}
+            </select>
+          </div>
+        </details>
+
+        <!-- Split view toggle -->
+        <button id="split-toggle"
+                type="button"
+                class="btn btn-ghost btn-sm"
+                aria-pressed="false"
+                aria-label="{{index .T "note.toggle_split"}}">
+          <!-- two-column icon -->
+          <svg aria-hidden="true" focusable="false"
+               viewBox="0 0 20 20" fill="none"
+               width="1em" height="1em">
+            <rect x="2"  y="3" width="6" height="14" rx="1"
+                  stroke="currentColor" stroke-width="1.5"/>
+            <rect x="12" y="3" width="6" height="14" rx="1"
+                  stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span class="split-label" aria-hidden="true">{{index .T "note.split_view"}}</span>
+        </button>
+
+        <!-- Done — returns the view fragment via HTMX -->
+        <button type="button"
+                class="btn btn-ghost btn-sm"
+                hx-get="/notes/view?title={{.Title | urlquery}}"
+                hx-target="#note-display-area"
+                hx-swap="innerHTML"
+                aria-label="{{index .T "note.cancel_editing_aria"}}">
+          {{index .T "note.done"}}
+        </button>
+
+      </div><!-- /.editor-topbar-actions -->
+    </div><!-- /.editor-topbar -->
+
+    <!-- ── Editor layout ── -->
+    <div class="editor-layout" id="editor-layout">
+
+      <!-- Write pane: the native textarea -->
+      <div class="editor-write-pane" id="editor-write-pane">
+        <textarea
+          id="editor-textarea"
+          name="content"
+          class="editor-field"
+          aria-label="{{index .T "note.content_aria"}}"
+          aria-multiline="true"
+          aria-describedby="editor-hint"
+          spellcheck="true">{{.Raw}}</textarea>
+        <span id="editor-hint" class="sr-only">
+          {{index .T "notes.markdown_hint"}}. {{index .T "notes.markdown_hint_sr"}}.
+        </span>
+      </div><!-- /.editor-write-pane -->
+
+      <!--
+        Preview pane: server-rendered HTML, populated by editor.js via
+        fetch → POST /notes/{id}/preview.  Hidden until split mode is on.
+        aria-live="polite" so that updates are announced non-intrusively.
+      -->
+      <div class="editor-preview-pane note-body"
+           id="editor-preview-pane"
+           role="region"
+           aria-label="{{index .T "note.preview_label"}}"
+           aria-live="polite"
+           hidden></div>
+
+    </div><!-- /.editor-layout -->
+
+  </form><!-- /#autosave-form -->
+</div><!-- /.editor-surface -->
 {{end}}

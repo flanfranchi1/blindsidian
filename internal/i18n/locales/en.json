@@ -105,5 +105,17 @@
   "cmd.palette_label": "Command Palette",
   "cmd.placeholder": "Search notes and notebooks…",
   "cmd.results_label": "Navigation results",
-  "cmd.empty": "No results found."
+  "cmd.empty": "No results found.",
+
+  "note.saved": "Saved",
+  "note.saving": "Saving\u2026",
+  "note.save_failed": "Save failed",
+  "note.save_untitled": "Add a # Heading to save",
+  "note.unsaved": "Unsaved changes",
+  "note.content_aria": "Note content, Markdown",
+  "note.metadata_label": "Note metadata",
+  "note.toggle_split": "Toggle split view",
+  "note.split_view": "Split",
+  "note.preview_label": "Rendered preview",
+  "note.done": "Done"
 }

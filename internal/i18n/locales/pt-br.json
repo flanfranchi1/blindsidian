@@ -2,13 +2,11 @@
   "nav.notes": "Notas",
   "nav.logout": "Sair",
   "nav.home_label": "Notty — ir para o início",
-
   "home.title": "notty — suas notas, simplesmente",
   "home.tagline": "Um lugar mínimo e acessível para suas notas.",
   "home.tagline_sub": "Escreva em Markdown. Conecte ideias. Mantenha o foco.",
   "home.cta_signup": "Criar conta",
   "home.cta_login": "Entrar",
-
   "auth.email": "E-mail",
   "auth.password": "Senha",
   "auth.signup_title": "Criar conta",
@@ -20,7 +18,6 @@
   "auth.forgot_password": "Esqueceu a senha?",
   "auth.forgot_password_title": "Redefinir senha",
   "auth.forgot_password_submit": "Enviar link",
-
   "notes.page_title": "Notas — notty",
   "notes.heading": "Suas notas",
   "notes.new_note": "Nova nota",
@@ -37,15 +34,12 @@
   "notes.notebooks_heading": "Cadernos",
   "notes.all_notes": "Todas as notas",
   "notes.updated_at": "Atualizado",
-
   "note.view_title_suffix": "— notty",
   "note.backlinks_heading": "Mencionado em",
   "note.edit_note": "Editar nota",
-
   "error.required_fields": "E-mail e senha são obrigatórios.",
   "error.email_taken": "E-mail já está cadastrado.",
   "error.invalid_credentials": "E-mail ou senha incorretos.",
-
   "error.db_unavailable": "Erro interno do servidor.",
   "error.render_failed": "Não foi possível exibir a página.",
   "error.internal": "Erro interno do servidor.",
@@ -56,15 +50,12 @@
   "error.notebook_not_found": "Caderno não encontrado.",
   "error.note_title_conflict": "Já existe uma nota com esse título.",
   "error.title_required": "Título é obrigatório.",
-
   "footer.tagline": "notty — suas notas, simplesmente.",
-
   "nav.skip_link": "Ir para o conteúdo principal",
   "nav.main_label": "Navegação principal",
   "nav.breadcrumb_label": "Localização",
   "nav.lang_switcher_label": "Idioma",
   "nav.account_nav_label": "Opções de conta",
-
   "auth.login_page_title": "Entrar — notty",
   "auth.signup_page_title": "Criar conta — notty",
   "auth.forgot_password_page_title": "Redefinir senha — notty",
@@ -77,33 +68,40 @@
   "auth.go_to_login": "Ir para o login",
   "auth.new_password": "Nova senha",
   "auth.confirm_password": "Confirmar nova senha",
-
   "notes.notebook_label": "Caderno",
   "notes.none": "Nenhum",
   "notes.create_notebook_btn": "Criar caderno",
   "notes.notebook_name_label": "Nome do caderno",
   "notes.notebook_list_label": "Lista de cadernos",
   "notes.search_hint": "Os resultados são atualizados automaticamente conforme você digita.",
-  "notes.searching": "Pesquisando\u2026",
+  "notes.searching": "Pesquisando…",
   "notes.search_results_label": "Resultados da pesquisa",
-  "notes.markdown_hint": "Markdown suportado \u00b7 conecte notas com [[Título]]",
+  "notes.markdown_hint": "Markdown suportado · conecte notas com [[Título]]",
   "notes.markdown_hint_sr": "Markdown suportado",
   "notes.empty_state": "Ainda não há notas. Crie a primeira acima.",
   "notes.delete_confirm_pre": "Excluir",
   "notes.delete_confirm_post": "Isso não pode ser desfeito.",
   "notes.list_updated": "Lista de notas atualizada.",
-
   "note.editing_prefix": "Editando:",
   "note.cancel_editing_aria": "Cancelar edição e voltar à visualização",
   "note.editing_mode": "Modo de edição ativo.",
   "note.view_mode": "Modo de visualização ativo.",
-
   "dialog.close": "Fechar",
   "dialog.new_note_desc": "Preencha os campos abaixo para criar uma nova nota.",
   "dialog.new_notebook_desc": "Digite um nome para o novo caderno.",
-
   "cmd.palette_label": "Paleta de comandos",
   "cmd.placeholder": "Pesquisar notas e cadernos…",
   "cmd.results_label": "Resultados de navegação",
-  "cmd.empty": "Nenhum resultado encontrado."
+  "cmd.empty": "Nenhum resultado encontrado.",
+  "note.saved": "Salvo",
+  "note.saving": "Salvando…",
+  "note.save_failed": "Erro ao salvar",
+  "note.save_untitled": "Adicione um título # para salvar",
+  "note.unsaved": "Alterações não salvas",
+  "note.content_aria": "Conteúdo da nota, Markdown",
+  "note.metadata_label": "Metadados da nota",
+  "note.toggle_split": "Alternar visão dividida",
+  "note.split_view": "Dividir",
+  "note.preview_label": "Visualização renderizada",
+  "note.done": "Concluído"
 }

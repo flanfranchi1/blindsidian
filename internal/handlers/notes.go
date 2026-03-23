@@ -425,6 +425,100 @@ func (s *Server) NoteActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Redirect(w, r, "/notes?msg=Note+saved", http.StatusSeeOther)
+
+	case "autosave":
+		// Lightweight background save triggered by the editor's auto-save form.
+		// Returns a small HTML status indicator only (no page navigation).
+		if r.Method != http.MethodPost {
+			http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
+			return
+		}
+		title := strings.TrimSpace(r.FormValue("title"))
+		content := r.FormValue("content")
+		notebookID := r.FormValue("notebook_id")
+
+		// Server-side title fallback: scan for the first ATX heading.
+		if title == "" {
+			for _, line := range strings.SplitN(content, "\n", 30) {
+				if strings.HasPrefix(line, "# ") {
+					title = strings.TrimSpace(strings.TrimPrefix(line, "# "))
+					break
+				}
+			}
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+		if title == "" {
+			// Cannot save without a title; ask the user to add a heading.
+			fmt.Fprint(w, `<span class="save-status save-status--warn">`+
+				html.EscapeString(s.t(r, "note.save_untitled"))+`</span>`)
+			return
+		}
+
+		existing, err := s.DBManager.GetNoteByID(db, noteID)
+		if err != nil || existing == nil {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `<span class="save-status save-status--err">`+
+				html.EscapeString(s.t(r, "note.save_failed"))+`</span>`)
+			return
+		}
+
+		existing.Title = title
+		existing.Content = content
+		existing.NotebookID = notebookID
+
+		if err := s.DBManager.UpdateNote(db, *existing); err != nil {
+			log.Printf("NoteActionHandler autosave: UpdateNote: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `<span class="save-status save-status--err">`+
+				html.EscapeString(s.t(r, "note.save_failed"))+`</span>`)
+			return
+		}
+
+		wikiTitles := markup.ParseWikiLinks(content)
+		targetIDs := []string{}
+		for _, t := range wikiTitles {
+			target, err := s.DBManager.GetNoteByTitle(db, t)
+			if err != nil {
+				continue
+			}
+			if target != nil {
+				targetIDs = append(targetIDs, target.ID)
+			}
+		}
+		s.DBManager.DeleteNoteLinks(db, noteID)
+		s.DBManager.InsertNoteLinks(db, noteID, targetIDs)
+		s.DBManager.InsertNoteTags(db, noteID, markup.ParseTags(content))
+
+		fmt.Fprint(w, `<span class="save-status save-status--ok">`+
+			html.EscapeString(s.t(r, "note.saved"))+`</span>`)
+
+	case "preview":
+		// Render raw Markdown POSTed from the editor into HTML for the preview pane.
+		if r.Method != http.MethodPost {
+			http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)
+			return
+		}
+		content := r.FormValue("content")
+		noteResolver := func(title string) (string, bool, error) {
+			n, err := s.DBManager.GetNoteByTitle(db, title)
+			if err != nil {
+				return "", false, err
+			}
+			if n == nil {
+				return "", false, nil
+			}
+			return n.ID, true, nil
+		}
+		htmlContent, err := markup.RenderMarkdownWithWikiLinks(content, noteResolver)
+		if err != nil {
+			log.Printf("NoteActionHandler preview: RenderMarkdownWithWikiLinks: %v", err)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, string(htmlContent))
 	case "delete":
 		if r.Method != http.MethodPost {
 			http.Error(w, s.t(r, "error.method_not_allowed"), http.StatusMethodNotAllowed)

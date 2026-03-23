@@ -2,13 +2,11 @@
   "nav.notes": "Notas",
   "nav.logout": "Cerrar sesión",
   "nav.home_label": "Notty — ir al inicio",
-
   "home.title": "notty — tus notas, simplemente",
   "home.tagline": "Un lugar mínimo y accesible para tus notas.",
   "home.tagline_sub": "Escribe en Markdown. Conecta ideas. Mantén el foco.",
   "home.cta_signup": "Crear cuenta",
   "home.cta_login": "Iniciar sesión",
-
   "auth.email": "Correo electrónico",
   "auth.password": "Contraseña",
   "auth.signup_title": "Crear cuenta",
@@ -20,7 +18,6 @@
   "auth.forgot_password": "¿Olvidaste tu contraseña?",
   "auth.forgot_password_title": "Restablecer contraseña",
   "auth.forgot_password_submit": "Enviar enlace",
-
   "notes.page_title": "Notas — notty",
   "notes.heading": "Tus notas",
   "notes.new_note": "Nueva nota",
@@ -37,15 +34,12 @@
   "notes.notebooks_heading": "Cuadernos",
   "notes.all_notes": "Todas las notas",
   "notes.updated_at": "Actualizado",
-
   "note.view_title_suffix": "— notty",
   "note.backlinks_heading": "Enlazado desde",
   "note.edit_note": "Editar nota",
-
   "error.required_fields": "El correo y la contraseña son obligatorios.",
   "error.email_taken": "El correo ya está registrado.",
   "error.invalid_credentials": "Correo o contraseña incorrectos.",
-
   "error.db_unavailable": "Error interno del servidor.",
   "error.render_failed": "No se pudo mostrar la página.",
   "error.internal": "Error interno del servidor.",
@@ -56,15 +50,12 @@
   "error.notebook_not_found": "Cuaderno no encontrado.",
   "error.note_title_conflict": "Ya existe una nota con ese título.",
   "error.title_required": "El título es obligatorio.",
-
   "footer.tagline": "notty — tus notas, simplemente.",
-
   "nav.skip_link": "Ir al contenido principal",
   "nav.main_label": "Navegación principal",
   "nav.breadcrumb_label": "Ruta de navegación",
   "nav.lang_switcher_label": "Idioma",
   "nav.account_nav_label": "Opciones de cuenta",
-
   "auth.login_page_title": "Iniciar sesión — notty",
   "auth.signup_page_title": "Crear cuenta — notty",
   "auth.forgot_password_page_title": "Restablecer contraseña — notty",
@@ -77,33 +68,40 @@
   "auth.go_to_login": "Ir al inicio de sesión",
   "auth.new_password": "Nueva contraseña",
   "auth.confirm_password": "Confirmar nueva contraseña",
-
   "notes.notebook_label": "Cuaderno",
   "notes.none": "Ninguno",
   "notes.create_notebook_btn": "Crear cuaderno",
   "notes.notebook_name_label": "Nombre del cuaderno",
   "notes.notebook_list_label": "Lista de cuadernos",
   "notes.search_hint": "Los resultados se actualizan automáticamente al escribir.",
-  "notes.searching": "Buscando\u2026",
+  "notes.searching": "Buscando…",
   "notes.search_results_label": "Resultados de búsqueda",
-  "notes.markdown_hint": "Markdown compatible \u00b7 enlaza notas con [[Título]]",
+  "notes.markdown_hint": "Markdown compatible · enlaza notas con [[Título]]",
   "notes.markdown_hint_sr": "Markdown compatible",
   "notes.empty_state": "Aún no hay notas. Crea la primera arriba.",
   "notes.delete_confirm_pre": "Eliminar",
   "notes.delete_confirm_post": "Esta acción no se puede deshacer.",
   "notes.list_updated": "Lista de notas actualizada.",
-
   "note.editing_prefix": "Editando:",
   "note.cancel_editing_aria": "Cancelar edición y volver a la vista",
   "note.editing_mode": "Modo de edición activo.",
   "note.view_mode": "Modo de vista activo.",
-
   "dialog.close": "Cerrar",
   "dialog.new_note_desc": "Completa los campos a continuación para crear una nueva nota.",
   "dialog.new_notebook_desc": "Ingresa un nombre para el nuevo cuaderno.",
-
   "cmd.palette_label": "Paleta de comandos",
   "cmd.placeholder": "Buscar notas y cuadernos…",
   "cmd.results_label": "Resultados de navegación",
-  "cmd.empty": "No se encontraron resultados."
+  "cmd.empty": "No se encontraron resultados.",
+  "note.saved": "Guardado",
+  "note.saving": "Guardando…",
+  "note.save_failed": "Error al guardar",
+  "note.save_untitled": "Añade un encabezado # para guardar",
+  "note.unsaved": "Cambios sin guardar",
+  "note.content_aria": "Contenido de la nota, Markdown",
+  "note.metadata_label": "Metadatos de la nota",
+  "note.toggle_split": "Alternar vista dividida",
+  "note.split_view": "Dividir",
+  "note.preview_label": "Vista previa renderizada",
+  "note.done": "Listo"
 }
