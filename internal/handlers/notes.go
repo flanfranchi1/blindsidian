@@ -115,7 +115,84 @@ func (s *Server) NotesHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		notebooks = []database.Notebook{}
 	}
-	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks})
+	inboxCount, _ := s.DBManager.CountInboxNotes(db)
+	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Message": message, "CreateTitle": createTitle, "Notebooks": notebooks, "InboxCount": inboxCount})
+}
+
+// InboxHandler serves GET /inbox — all notes that are not assigned to any
+// notebook.  Uses the same notes.gohtml template with IsInbox=true so the
+// sidebar and heading text switch to "Inbox" context.
+func (s *Server) InboxHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.currentUserID(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	db, err := s.DBManager.OpenUserDB(userID)
+	if err != nil {
+		log.Printf("InboxHandler: OpenUserDB: %v", err)
+		http.Error(w, s.t(r, "error.db_unavailable"), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	notes, err := s.DBManager.ListInboxNotes(db)
+	if err != nil {
+		log.Printf("InboxHandler: ListInboxNotes: %v", err)
+		http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	type RenderNote struct {
+		ID           string
+		Title        string
+		Content      string
+		UpdatedAt    string
+		RenderedHTML template.HTML
+		NotebookID   string
+	}
+
+	noteResolver := func(title string) (string, bool, error) {
+		n, err := s.DBManager.GetNoteByTitle(db, title)
+		if err != nil {
+			return "", false, err
+		}
+		if n == nil {
+			return "", false, nil
+		}
+		return n.ID, true, nil
+	}
+
+	rendered := []RenderNote{}
+	for _, note := range notes {
+		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteResolver)
+		if err != nil {
+			log.Printf("InboxHandler: RenderMarkdownWithWikiLinks: %v", err)
+			http.Error(w, s.t(r, "error.internal"), http.StatusInternalServerError)
+			return
+		}
+		rendered = append(rendered, RenderNote{
+			ID:           note.ID,
+			Title:        note.Title,
+			Content:      note.Content,
+			UpdatedAt:    note.UpdatedAt,
+			RenderedHTML: template.HTML(htmlContent),
+			NotebookID:   note.NotebookID,
+		})
+	}
+
+	notebooks, err := s.DBManager.ListNotebooks(db)
+	if err != nil {
+		notebooks = []database.Notebook{}
+	}
+	inboxCount := len(rendered)
+	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{
+		"Notes":      rendered,
+		"Notebooks":  notebooks,
+		"InboxCount": inboxCount,
+		"IsInbox":    true,
+	})
 }
 
 func (s *Server) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {

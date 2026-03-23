@@ -2,13 +2,11 @@
   "nav.notes": "Notes",
   "nav.logout": "Log out",
   "nav.home_label": "Notty — go to home",
-
   "home.title": "notty — your notes, plainly",
   "home.tagline": "A minimal, accessible place for your notes.",
   "home.tagline_sub": "Write in Markdown. Link ideas. Stay focused.",
   "home.cta_signup": "Create account",
   "home.cta_login": "Log in",
-
   "auth.email": "Email",
   "auth.password": "Password",
   "auth.signup_title": "Create account",
@@ -20,7 +18,6 @@
   "auth.forgot_password": "Forgot password?",
   "auth.forgot_password_title": "Reset password",
   "auth.forgot_password_submit": "Send reset link",
-
   "notes.page_title": "Notes — notty",
   "notes.heading": "Your notes",
   "notes.new_note": "New note",
@@ -37,15 +34,12 @@
   "notes.notebooks_heading": "Notebooks",
   "notes.all_notes": "All notes",
   "notes.updated_at": "Updated",
-
   "note.view_title_suffix": "— notty",
   "note.backlinks_heading": "Linked from",
   "note.edit_note": "Edit note",
-
   "error.required_fields": "Email and password are required.",
   "error.email_taken": "Email is already registered.",
   "error.invalid_credentials": "Invalid email or password.",
-
   "error.db_unavailable": "Internal server error.",
   "error.render_failed": "Unable to render page.",
   "error.internal": "Internal server error.",
@@ -56,15 +50,12 @@
   "error.notebook_not_found": "Notebook not found.",
   "error.note_title_conflict": "A note with that title already exists.",
   "error.title_required": "Title is required.",
-
   "footer.tagline": "notty — your notes, plainly.",
-
   "nav.skip_link": "Skip to main content",
   "nav.main_label": "Main navigation",
   "nav.breadcrumb_label": "Breadcrumb",
   "nav.lang_switcher_label": "Language",
   "nav.account_nav_label": "Account options",
-
   "auth.login_page_title": "Log in — notty",
   "auth.signup_page_title": "Create account — notty",
   "auth.forgot_password_page_title": "Reset password — notty",
@@ -77,38 +68,33 @@
   "auth.go_to_login": "Go to log in",
   "auth.new_password": "New password",
   "auth.confirm_password": "Confirm new password",
-
   "notes.notebook_label": "Notebook",
   "notes.none": "None",
   "notes.create_notebook_btn": "Create notebook",
   "notes.notebook_name_label": "Notebook name",
   "notes.notebook_list_label": "Notebook list",
   "notes.search_hint": "Results update automatically as you type.",
-  "notes.searching": "Searching\u2026",
+  "notes.searching": "Searching…",
   "notes.search_results_label": "Search results",
-  "notes.markdown_hint": "Markdown supported \u00b7 link notes with [[Title]]",
+  "notes.markdown_hint": "Markdown supported · link notes with [[Title]]",
   "notes.markdown_hint_sr": "Markdown supported",
   "notes.empty_state": "No notes yet. Create your first one above.",
   "notes.delete_confirm_pre": "Delete",
   "notes.delete_confirm_post": "This cannot be undone.",
   "notes.list_updated": "Note list updated.",
-
   "note.editing_prefix": "Editing:",
   "note.cancel_editing_aria": "Cancel editing and return to view",
   "note.editing_mode": "Editing mode active.",
   "note.view_mode": "View mode active.",
-
   "dialog.close": "Close",
   "dialog.new_note_desc": "Fill in the fields below to create a new note.",
   "dialog.new_notebook_desc": "Enter a name for the new notebook.",
-
   "cmd.palette_label": "Command Palette",
   "cmd.placeholder": "Search notes and notebooks…",
   "cmd.results_label": "Navigation results",
   "cmd.empty": "No results found.",
-
   "note.saved": "Saved",
-  "note.saving": "Saving\u2026",
+  "note.saving": "Saving…",
   "note.save_failed": "Save failed",
   "note.save_untitled": "Add a # Heading to save",
   "note.unsaved": "Unsaved changes",
@@ -117,5 +103,12 @@
   "note.toggle_split": "Toggle split view",
   "note.split_view": "Split",
   "note.preview_label": "Rendered preview",
-  "note.done": "Done"
+  "note.done": "Done",
+  "notes.inbox": "Inbox",
+  "notes.inbox_aria": "Inbox — notes without a notebook",
+  "notes.inbox_count_aria": "unassigned notes",
+  "notes.inbox_empty": "Your Inbox is empty. Notes you capture without selecting a notebook will appear here.",
+  "notebook.toc_heading": "In this notebook",
+  "notebook.index_heading": "Notebook overview",
+  "notebook.edit_index_note": "Edit overview"
 }

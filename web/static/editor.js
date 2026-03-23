@@ -226,3 +226,57 @@ window.notty.editor = (function () {
   // Public surface (currently just for debugging).
   return { init: init };
 }());
+
+/**
+ * Smooth-scroll handler for sidebar Table of Contents anchor links.
+ *
+ * Problem: the workspace layout sets `overflow: hidden` on <body> and
+ * `overflow-y: auto` on `.workspace-main`.  In some browsers, native
+ * anchor navigation targets the document root scroller rather than the
+ * nearest scrollable ancestor, so `#heading-id` clicks jump to the top
+ * of the page rather than the heading.  This handler corrects that by
+ * manually computing the scroll offset and using scrollTo({behavior:'smooth'}).
+ *
+ * Accessibility
+ * ─────────────
+ * • Focus is moved to the target heading so keyboard users and screen
+ *   readers land at the right place.
+ * • A temporary tabindex="-1" is added when the element is not naturally
+ *   focusable (headings are not by default).
+ * • The URL hash is updated so the browser back-button and link sharing
+ *   continue to work as expected.
+ */
+(function () {
+  'use strict';
+
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('.sidebar-toc a[href^="#"]');
+    if (!link) return;
+
+    var hash = link.getAttribute('href'); // e.g. "#my-heading"
+    var id   = hash.slice(1);
+    var target = document.getElementById(id);
+    if (!target) return;
+
+    e.preventDefault();
+
+    // Prefer .workspace-main as the scroll container; fall back to documentElement.
+    var scroller = document.querySelector('.workspace-main') || document.documentElement;
+
+    // Compute the heading's position relative to the scroller's viewport.
+    var scrollerRect = scroller.getBoundingClientRect();
+    var targetRect   = target.getBoundingClientRect();
+    var offsetTop    = targetRect.top - scrollerRect.top + scroller.scrollTop;
+
+    scroller.scrollTo({ top: offsetTop, behavior: 'smooth' });
+
+    // Move focus to the heading for keyboard and screen-reader users.
+    if (!target.hasAttribute('tabindex')) {
+      target.setAttribute('tabindex', '-1');
+    }
+    target.focus({ preventScroll: true });
+
+    // Keep URL bar in sync so users can share/bookmark the anchor.
+    history.replaceState(null, '', hash);
+  });
+}());

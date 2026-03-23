@@ -103,5 +103,12 @@
   "note.toggle_split": "Alternar visão dividida",
   "note.split_view": "Dividir",
   "note.preview_label": "Visualização renderizada",
-  "note.done": "Concluído"
+  "note.done": "Concluído",
+  "notes.inbox": "Caixa de Entrada",
+  "notes.inbox_aria": "Caixa de Entrada — notas sem caderno",
+  "notes.inbox_count_aria": "notas não atribuídas",
+  "notes.inbox_empty": "Sua Caixa de Entrada está vazia. As notas capturadas sem selecionar um caderno aparecerão aqui.",
+  "notebook.toc_heading": "Neste caderno",
+  "notebook.index_heading": "Visão geral do caderno",
+  "notebook.edit_index_note": "Editar visão geral"
 }

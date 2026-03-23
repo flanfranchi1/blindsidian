@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{if .Notebook}}{{.Notebook.Name}} — {{end}}{{index .T "notes.page_title"}}</title>
+  <title>{{if .IsInbox}}{{index .T "notes.inbox"}} — {{else if .Notebook}}{{.Notebook.Name}} — {{end}}{{index .T "notes.page_title"}}</title>
   {{template "head-assets" .}}
 </head>
 <body class="workspace-page"
@@ -30,7 +30,7 @@
       <div class="workspace-main-inner">
 
         <h1 class="page-heading">
-          {{if .Notebook}}{{.Notebook.Name}}{{else}}{{index .T "notes.heading"}}{{end}}
+          {{if .IsInbox}}{{index .T "notes.inbox"}}{{else if .Notebook}}{{.Notebook.Name}}{{else}}{{index .T "notes.heading"}}{{end}}
         </h1>
 
         <!-- ── Search ── -->
@@ -71,9 +71,33 @@
 
         <hr class="divider">
 
+        {{/*
+          ── Notebook Index Note banner ──────────────────────────────────
+          When the user is viewing a specific Notebook and the notebook has
+          an Index Note (tagged #index), its rendered HTML is shown here as
+          a wiki-style overview.  Headings inside have id attributes injected
+          by addHeadingIDs, so sidebar ToC anchor links (#heading-id) resolve
+          correctly within this scrollable container.
+        */}}
+        {{if .IndexNote}}
+        <section class="notebook-index" aria-labelledby="notebook-index-heading">
+          <h2 id="notebook-index-heading" class="sr-only">{{index .T "notebook.index_heading"}}</h2>
+          <div class="note-body">
+            {{.IndexNote.RenderedHTML}}
+          </div>
+          <a href="/notes/{{.IndexNote.ID}}"
+             class="btn btn-ghost btn-sm notebook-index__edit-link">
+            {{index .T "notebook.edit_index_note"}}
+          </a>
+        </section>
+        <hr class="divider">
+        {{end}}
+
         <!-- ── Notes list ── -->
         <section aria-labelledby="notes-list-heading">
-          <h2 id="notes-list-heading">{{index .T "notes.all_notes"}}</h2>
+          <h2 id="notes-list-heading">
+            {{if .IsInbox}}{{index .T "notes.inbox"}}{{else}}{{index .T "notes.all_notes"}}{{end}}
+          </h2>
           {{if .Notes}}
           <ul class="notes-list" id="notes-list" role="list">
             {{range .Notes}}
@@ -81,7 +105,7 @@
             {{end}}
           </ul>
           {{else}}
-          <p>{{index .T "notes.empty_state"}}</p>
+          <p>{{if .IsInbox}}{{index .T "notes.inbox_empty"}}{{else}}{{index .T "notes.empty_state"}}{{end}}</p>
           {{end}}
         </section>
 
@@ -125,22 +149,72 @@
         </button>
       </div>
 
-      <!-- ── Notebooks list ── -->
+      {{/*
+        ── Inbox link (permanently pinned above notebooks) ─────────────
+        Notes with no notebook_id land here — a frictionless capture
+        destination.  The badge shows the count of unassigned notes;
+        it is hidden (aria-hidden) when the count is zero to avoid
+        announcing an empty badge to screen readers.
+        aria-current="page" is set when the user is viewing /inbox.
+      */}}
+      <div class="sidebar-inbox">
+        <a href="/inbox"
+           class="sidebar-inbox-link"
+           {{if .IsInbox}}aria-current="page"{{end}}
+           aria-label="{{index .T "notes.inbox_aria"}}">
+          {{/* Inbox tray icon */}}
+          <svg class="sidebar-inbox-icon" aria-hidden="true" focusable="false"
+               viewBox="0 0 20 20" fill="none" width="1.1em" height="1.1em">
+            <rect x="2" y="12" width="16" height="6" rx="1"
+                  stroke="currentColor" stroke-width="1.5"/>
+            <path d="M2 12l3-7h10l3 7"
+                  stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M7 15.5h6"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="sidebar-inbox-label">{{index .T "notes.inbox"}}</span>
+          {{if .InboxCount}}
+          <span class="inbox-badge"
+                aria-label="{{.InboxCount}} {{index .T "notes.inbox_count_aria"}}">
+            {{.InboxCount}}
+          </span>
+          {{end}}
+        </a>
+      </div><!-- /.sidebar-inbox -->
+
+      <!-- ── Navigate section: All Notes + Notebooks ── -->
       <section class="sidebar-section" aria-labelledby="notebooks-heading">
         <h2 class="sidebar-heading" id="notebooks-heading">{{index .T "notes.notebooks_heading"}}</h2>
         <ul class="notebook-list" role="list">
           <li>
             <a href="/notes"
-               {{if not .Notebook}}aria-current="page"{{end}}>
+               {{if and (not .IsInbox) (not .Notebook)}}aria-current="page"{{end}}>
               {{index .T "notes.all_notes"}}
             </a>
           </li>
           {{range .Notebooks}}
-          <li>
+          <li class="notebook-list__item">
             <a href="/notebooks/{{.ID}}"
                {{if and $.Notebook (eq $.Notebook.ID .ID)}}aria-current="page"{{end}}>
               {{.Name}}
             </a>
+            {{/*
+              Dynamic ToC: rendered only when this notebook IS the active one
+              AND the notebook has an Index Note with at least one heading.
+              The anchor hrefs target headings in the rendered Index Note whose
+              id attributes were injected by addHeadingIDs in the Go renderer.
+              Level-2 headings (##) are flush; level-3 (###) are indented.
+            */}}
+            {{if and $.Notebook (eq $.Notebook.ID .ID) $.ToCEntries}}
+            <ul class="sidebar-toc" role="list"
+                aria-label="{{index $.T "notebook.toc_heading"}}">
+              {{range $.ToCEntries}}
+              <li class="sidebar-toc__item sidebar-toc__item--h{{.Level}}">
+                <a href="#{{.ID}}">{{.Text}}</a>
+              </li>
+              {{end}}
+            </ul>
+            {{end}}
           </li>
           {{end}}
         </ul>

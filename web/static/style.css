@@ -1313,3 +1313,178 @@ dialog::backdrop {
     border-top: 1px solid var(--c-border);
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   31. Inbox, Notebook ToC, and Index Note banner
+   ══════════════════════════════════════════════════════════
+
+   Inbox link
+   ──────────
+   .sidebar-inbox sits between the action buttons and the notebooks
+   section, permanently visible. It uses a flex row so the icon,
+   label, and badge align naturally.  Active/current state mirrors
+   the notebook-link style defined in Section 29.
+
+   Sidebar ToC
+   ───────────
+   .sidebar-toc is a nested <ul> rendered only under the currently
+   active notebook.  Level-2 headings (##) are indented to visually
+   sit under the notebook's link; level-3 (###) are indented further.
+   All links inherit the sidebar's colour scheme + focus styles.
+
+   Notebook Index Note banner (.notebook-index)
+   ─────────────────────────────────────────────
+   Shown at the top of the main content area when the notebook has
+   an Index Note.  Uses the same .note-body class as the view fragment
+   so prose, pre-code, and wiki-link styles apply automatically.
+*/
+
+/* ── Inbox pinned section ─────────────────────────────────── */
+
+.sidebar-inbox {
+  padding: var(--s-2) var(--s-3) var(--s-1);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.sidebar-inbox-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius);
+  color: var(--c-text);
+  text-decoration: none;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-inbox-link:hover {
+  background-color: color-mix(in srgb, var(--c-accent) 8%, transparent);
+  color: var(--c-accent);
+}
+
+.sidebar-inbox-link[aria-current="page"] {
+  background-color: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  color: var(--c-accent);
+  font-weight: 600;
+}
+
+.sidebar-inbox-link:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.sidebar-inbox-icon {
+  flex-shrink: 0;
+  color: var(--c-muted);
+}
+.sidebar-inbox-link[aria-current="page"] .sidebar-inbox-icon,
+.sidebar-inbox-link:hover .sidebar-inbox-icon {
+  color: inherit;
+}
+
+.sidebar-inbox-label {
+  flex: 1;
+}
+
+/* Count badge — rounded pill showing number of inbox notes */
+.inbox-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding-inline: 0.3rem;
+  border-radius: 999px;
+  background-color: var(--c-accent);
+  color: var(--c-bg);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  /* The badge is decorative; its accessible label is on the parent <a> */
+  aria-hidden: attr(aria-label);
+}
+
+/* ── Sidebar Table of Contents ─────────────────────────────── */
+
+.notebook-list__item {
+  /* Needed so the nested ToC list is indented relative to the item */
+}
+
+.sidebar-toc {
+  margin: var(--s-1) 0 var(--s-2) var(--s-4);
+  padding: 0;
+  list-style: none;
+  border-left: 2px solid var(--c-border);
+}
+
+.sidebar-toc__item {
+  margin: 0;
+}
+
+.sidebar-toc__item a {
+  display: block;
+  padding: 0.2rem var(--s-2);
+  padding-left: var(--s-3);
+  font-size: var(--t-xs);
+  color: var(--c-muted);
+  text-decoration: none;
+  line-height: 1.5;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  transition: color 0.12s ease, background-color 0.12s ease;
+  /* Prevent very long heading texts from overflowing the sidebar */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-toc__item a:hover {
+  color: var(--c-accent);
+  background-color: color-mix(in srgb, var(--c-accent) 6%, transparent);
+}
+
+.sidebar-toc__item a:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
+/* Level-3 headings (###) indented further than level-2 (##) */
+.sidebar-toc__item--h3 a {
+  padding-left: calc(var(--s-3) + var(--s-3));
+}
+
+/* ── Notebook Index Note banner ────────────────────────────── */
+
+.notebook-index {
+  padding: var(--s-6) 0 var(--s-4);
+}
+
+/* Reuse existing .note-body prose styles — defined in the view fragment CSS */
+.notebook-index .note-body {
+  max-width: 68ch;
+}
+
+/* The headings inside the Index Note receive id attributes from
+   addHeadingIDs in Go, making then valid anchor targets for the ToC. */
+.notebook-index .note-body h2,
+.notebook-index .note-body h3 {
+  scroll-margin-top: var(--s-6);   /* offset for sticky topbars */
+}
+
+.notebook-index__edit-link {
+  display: inline-flex;
+  margin-top: var(--s-3);
+  font-size: var(--t-xs);
+  color: var(--c-muted);
+}
+
+/* ── Smooth scroll on workspace-main  ───────────────────────── */
+
+/* Enable CSS smooth scrolling for all anchor navigation within the
+   workspace main column.  JS (editor.js) handles the ToC clicks
+   explicitly for browsers with nested overflow containers. */
+.workspace-main {
+  scroll-behavior: smooth;
+}

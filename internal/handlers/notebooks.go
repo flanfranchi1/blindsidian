@@ -116,8 +116,34 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 		return n.ID, true, nil
 	}
 
+	// Fetch and render the Index Note (tagged #index) for this notebook.
+	// Its headings populate the sidebar Table of Contents; its rendered HTML
+	// is shown as a wiki-style header above the note cards.
+	indexNoteRaw, err := s.DBManager.GetNotebookIndexNote(db, notebookID)
+	if err != nil {
+		log.Printf("NotebookViewHandler: GetNotebookIndexNote: %v", err)
+		// Non-fatal: continue without an index note.
+		indexNoteRaw = nil
+	}
+	var indexNoteHTML template.HTML
+	var tocEntries []markup.ToCEntry
+	if indexNoteRaw != nil {
+		htmlContent, err := markup.RenderMarkdownWithWikiLinks(indexNoteRaw.Content, noteExists)
+		if err != nil {
+			log.Printf("NotebookViewHandler: RenderMarkdownWithWikiLinks (index): %v", err)
+		} else {
+			indexNoteHTML = template.HTML(htmlContent)
+			tocEntries = markup.ExtractToCHeadings(indexNoteRaw.Content)
+		}
+	}
+
 	rendered := []RenderNote{}
 	for _, note := range notes {
+		// The Index Note is rendered separately at the top of the page;
+		// skip it from the regular note-card list to avoid duplication.
+		if indexNoteRaw != nil && note.ID == indexNoteRaw.ID {
+			continue
+		}
 		htmlContent, err := markup.RenderMarkdownWithWikiLinks(note.Content, noteExists)
 		if err != nil {
 			log.Printf("NotebookViewHandler: RenderMarkdownWithWikiLinks: %v", err)
@@ -139,5 +165,21 @@ func (s *Server) NotebookViewHandler(w http.ResponseWriter, r *http.Request) {
 		notebooks = []database.Notebook{}
 	}
 
-	s.RenderTemplate(w, r, "notes.gohtml", map[string]interface{}{"Notes": rendered, "Notebooks": notebooks, "Notebook": notebook})
+	inboxCount, _ := s.DBManager.CountInboxNotes(db)
+
+	data := map[string]interface{}{
+		"Notes":      rendered,
+		"Notebooks":  notebooks,
+		"Notebook":   notebook,
+		"InboxCount": inboxCount,
+		"ToCEntries": tocEntries,
+	}
+	if indexNoteHTML != "" {
+		data["IndexNote"] = map[string]interface{}{
+			"ID":           indexNoteRaw.ID,
+			"Title":        indexNoteRaw.Title,
+			"RenderedHTML": indexNoteHTML,
+		}
+	}
+	s.RenderTemplate(w, r, "notes.gohtml", data)
 }

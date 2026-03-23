@@ -76,6 +76,7 @@ func main() {
 	mux.HandleFunc("/login", server.LoginHandler)
 	mux.HandleFunc("/notes", server.NotesHandler)
 	mux.HandleFunc("/notes/create", server.CreateNoteHandler)
+	mux.HandleFunc("/inbox", server.InboxHandler)
 	mux.HandleFunc("/notebooks/create", server.CreateNotebookHandler)
 	mux.HandleFunc("/notebooks/", server.NotebookViewHandler)
 	mux.HandleFunc("/notes/view", server.ViewNoteHandler)

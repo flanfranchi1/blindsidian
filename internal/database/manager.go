@@ -518,6 +518,67 @@ func (m *DatabaseManager) GetNotesByNotebookID(db *sql.DB, notebookID string) ([
 	return notes, nil
 }
 
+// ListInboxNotes returns notes that have no notebook assignment, i.e. the
+// "Inbox" — notes captured quickly without organisation.
+func (m *DatabaseManager) ListInboxNotes(db *sql.DB) ([]Note, error) {
+	query := `SELECT id, title, content, updated_at, COALESCE(notebook_id, '')
+	          FROM notes
+	          WHERE notebook_id IS NULL OR notebook_id = ''
+	          ORDER BY updated_at DESC LIMIT 100;`
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list inbox notes: %w", err)
+	}
+	defer rows.Close()
+
+	notes := []Note{}
+	for rows.Next() {
+		n := Note{}
+		if err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UpdatedAt, &n.NotebookID); err != nil {
+			return nil, fmt.Errorf("unable to scan inbox note: %w", err)
+		}
+		notes = append(notes, n)
+	}
+	return notes, nil
+}
+
+// CountInboxNotes returns the number of Inbox notes (no notebook assigned).
+// Used to display a badge count in the sidebar.
+func (m *DatabaseManager) CountInboxNotes(db *sql.DB) (int, error) {
+	var count int
+	err := db.QueryRow(
+		`SELECT COUNT(*) FROM notes WHERE notebook_id IS NULL OR notebook_id = '';`,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("unable to count inbox notes: %w", err)
+	}
+	return count, nil
+}
+
+// GetNotebookIndexNote returns the "index note" for a notebook — the first
+// note in that notebook tagged `#index`.  This note is rendered prominently
+// at the top of the notebook view and its headings populate the sidebar ToC.
+//
+// Returns nil without error when no such note exists.
+func (m *DatabaseManager) GetNotebookIndexNote(db *sql.DB, notebookID string) (*Note, error) {
+	query := `
+		SELECT n.id, n.title, n.content, n.updated_at, COALESCE(n.notebook_id, '')
+		FROM notes n
+		JOIN note_tags t ON n.id = t.note_id
+		WHERE n.notebook_id = ? AND t.tag = 'index'
+		ORDER BY n.updated_at ASC
+		LIMIT 1;`
+	note := &Note{}
+	row := db.QueryRow(query, notebookID)
+	if err := row.Scan(&note.ID, &note.Title, &note.Content, &note.UpdatedAt, &note.NotebookID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unable to get notebook index note: %w", err)
+	}
+	return note, nil
+}
+
 // SeedTutorial populates a new user's database with a "Tutorial" notebook
 // containing three notes that showcase the Notty Markdown parser features.
 // translations is the flat key→value map for the user's locale, obtained via

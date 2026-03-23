@@ -103,5 +103,12 @@
   "note.toggle_split": "Alternar vista dividida",
   "note.split_view": "Dividir",
   "note.preview_label": "Vista previa renderizada",
-  "note.done": "Listo"
+  "note.done": "Listo",
+  "notes.inbox": "Bandeja de entrada",
+  "notes.inbox_aria": "Bandeja de entrada — notas sin libreta",
+  "notes.inbox_count_aria": "notas sin asignar",
+  "notes.inbox_empty": "Tu Bandeja de entrada está vacía. Las notas que captures sin seleccionar una libreta aparecerán aquí.",
+  "notebook.toc_heading": "En este cuaderno",
+  "notebook.index_heading": "Descripción del cuaderno",
+  "notebook.edit_index_note": "Editar descripción"
 }
